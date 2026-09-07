@@ -116,7 +116,14 @@ export function TopPerformersModal({
   onViewDetails,
 }: TopPerformersModalProps) {
   const [celebrationBurst, setCelebrationBurst] = useState(0);
-  const modalScale = useRef(new RNAnimated.Value(0.95)).current;
+  const modalScaleRef = useRef<RNAnimated.Value | null>(null);
+  if (modalScaleRef.current === null) {
+    modalScaleRef.current = new RNAnimated.Value(0.95);
+  }
+  // Lazy ref initialization (react.dev/reference/react/useRef#avoiding-recreating-the-ref-contents):
+  // reading .current here is safe since it's only ever set once, above.
+  // eslint-disable-next-line react-hooks/refs
+  const modalScale = modalScaleRef.current;
 
   const podiumOrder = useMemo(
     () =>
@@ -126,10 +133,17 @@ export function TopPerformersModal({
     [performers],
   );
 
+  // Bump the burst counter during render (not in the effect below) so opening
+  // the modal doesn't cost an extra commit just to retrigger the confetti.
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) setCelebrationBurst((prev) => prev + 1);
+  }
+
   useEffect(() => {
     if (!visible) return;
 
-    setCelebrationBurst((prev) => prev + 1);
     modalScale.setValue(0.95);
     RNAnimated.spring(modalScale, {
       toValue: 1,

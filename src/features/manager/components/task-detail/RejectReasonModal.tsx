@@ -54,18 +54,20 @@ export function RejectReasonModal({
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
 
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (!visible) {
+      setReason("");
+      setError("");
+    }
+  }
+
   useEffect(() => {
     if (visible) {
       sheetRef.current?.present();
     } else {
       sheetRef.current?.dismiss();
-    }
-  }, [visible]);
-
-  useEffect(() => {
-    if (!visible) {
-      setReason("");
-      setError("");
     }
   }, [visible]);
 

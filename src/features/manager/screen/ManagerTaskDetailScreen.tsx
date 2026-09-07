@@ -188,7 +188,7 @@ export default function ManagerTaskDetailScreen() {
       task?.parentId
         ? allTasks.find((item) => item.id === task.parentId)
         : undefined,
-    [allTasks, task?.parentId],
+    [allTasks, task],
   );
 
   const handleSubtaskPress = useCallback(

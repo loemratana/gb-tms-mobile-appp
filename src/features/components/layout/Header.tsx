@@ -33,7 +33,14 @@ export function HeaderProfile({
 }: HeaderProfileProps) {
   const greeting = getGreeting();
 
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnimRef = useRef<Animated.Value | null>(null);
+  if (rotateAnimRef.current === null) {
+    rotateAnimRef.current = new Animated.Value(0);
+  }
+  // Lazy ref initialization (react.dev/reference/react/useRef#avoiding-recreating-the-ref-contents):
+  // reading .current here is safe since it's only ever set once, above.
+  // eslint-disable-next-line react-hooks/refs
+  const rotateAnim = rotateAnimRef.current;
 
   useEffect(() => {
     Animated.loop(
@@ -50,8 +57,11 @@ export function HeaderProfile({
         }),
       ]),
     ).start();
-  }, []);
+  }, [rotateAnim]);
 
+  // rotateAnim is a stable Animated.Value ref; calling .interpolate() at render
+  // time is the documented way to derive an animated style from it.
+  // eslint-disable-next-line react-hooks/refs
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["-10deg", "10deg"],

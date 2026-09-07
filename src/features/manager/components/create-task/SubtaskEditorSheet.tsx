@@ -205,10 +205,12 @@ export const SubtaskEditorSheet = forwardRef<
     close: handleClose,
   }));
 
-  const submit = handleSubmit((values) => {
-    onSave(values, editingIndex);
-    handleClose();
-  });
+  const submit = useCallback(() => {
+    void handleSubmit((values) => {
+      onSave(values, editingIndex);
+      handleClose();
+    })();
+  }, [handleSubmit, onSave, editingIndex, handleClose]);
 
   const isEditing = editingIndex !== undefined;
 

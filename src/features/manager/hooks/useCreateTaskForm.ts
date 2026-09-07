@@ -264,62 +264,64 @@ export function useCreateTaskForm(ref: ForwardedRef<CreateTaskBottomSheetRef>) {
     subtaskEditorRef.current?.open(subtasks[index], index);
   };
 
-  const onSubmit = handleSubmit(async (values) => {
-    if (!departmentId) {
-      Alert.alert(
-        "Can't create task",
-        "Your account has no department assigned. Contact an admin before creating tasks.",
-      );
-      return;
-    }
-
-    const [assigneeId, ...additionalAssigneeIds] = values.assignees;
-
-    try {
-      const parentTask = await createTaskMutation.mutateAsync({
-        title: values.title.trim(),
-        description: values.description.trim() || undefined,
-        priority: values.priority,
-        status: "TODO",
-        departmentId,
-        assigneeId,
-        ...toApiDates(values),
-      });
-
-      if (additionalAssigneeIds.length > 0) {
-        await assignAdditionalUsers(parentTask.id, { userIds: additionalAssigneeIds });
+  const onSubmit = useCallback(() => {
+    void handleSubmit(async (values) => {
+      if (!departmentId) {
+        Alert.alert(
+          "Can't create task",
+          "Your account has no department assigned. Contact an admin before creating tasks.",
+        );
+        return;
       }
 
-      for (const subtask of values.subtasks) {
-        const resolved = resolveSubtaskForSubmit(subtask, values);
-        await createTaskMutation.mutateAsync({
-          title: resolved.title,
-          description: resolved.description || undefined,
+      const [assigneeId, ...additionalAssigneeIds] = values.assignees;
+
+      try {
+        const parentTask = await createTaskMutation.mutateAsync({
+          title: values.title.trim(),
+          description: values.description.trim() || undefined,
           priority: values.priority,
           status: "TODO",
           departmentId,
-          assigneeId: resolved.assigneeId,
-          parentTaskId: parentTask.id,
-          ...toApiDates(resolved),
+          assigneeId,
+          ...toApiDates(values),
         });
+
+        if (additionalAssigneeIds.length > 0) {
+          await assignAdditionalUsers(parentTask.id, { userIds: additionalAssigneeIds });
+        }
+
+        for (const subtask of values.subtasks) {
+          const resolved = resolveSubtaskForSubmit(subtask, values);
+          await createTaskMutation.mutateAsync({
+            title: resolved.title,
+            description: resolved.description || undefined,
+            priority: values.priority,
+            status: "TODO",
+            departmentId,
+            assigneeId: resolved.assigneeId,
+            parentTaskId: parentTask.id,
+            ...toApiDates(resolved),
+          });
+        }
+
+        reset();
+        sheetRef.current?.dismiss();
+
+        const subtaskNote =
+          values.subtasks.length > 0
+            ? ` with ${values.subtasks.length} subtask${values.subtasks.length === 1 ? "" : "s"}`
+            : "";
+
+        Alert.alert(
+          "Task Created",
+          `"${values.title}" (${parentTask.taskCode}) created${subtaskNote}.`,
+        );
+      } catch (error) {
+        Alert.alert("Couldn't create task", resolveErrorMessage(error));
       }
-
-      reset();
-      sheetRef.current?.dismiss();
-
-      const subtaskNote =
-        values.subtasks.length > 0
-          ? ` with ${values.subtasks.length} subtask${values.subtasks.length === 1 ? "" : "s"}`
-          : "";
-
-      Alert.alert(
-        "Task Created",
-        `"${values.title}" (${parentTask.taskCode}) created${subtaskNote}.`,
-      );
-    } catch (error) {
-      Alert.alert("Couldn't create task", resolveErrorMessage(error));
-    }
-  });
+    })();
+  }, [handleSubmit, departmentId, createTaskMutation, reset, sheetRef]);
 
   return {
     sheetRef,

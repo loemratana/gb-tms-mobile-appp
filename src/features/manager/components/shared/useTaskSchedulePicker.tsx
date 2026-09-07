@@ -65,7 +65,9 @@ export function useTaskSchedulePicker(
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
   const onPickRef = useRef(onPick);
-  onPickRef.current = onPick;
+  useEffect(() => {
+    onPickRef.current = onPick;
+  }, [onPick]);
 
   const openPicker = useCallback(
     (target: PickerTarget) => {
@@ -190,11 +192,10 @@ function IosPickerModal({
   onChange,
 }: SchedulePickerOverlayProps) {
   const insets = useSafeAreaInsets();
+  // Seeded from pickerDate on mount; a fresh picker session (new pickerTarget or
+  // pickerDate from openPicker) remounts this component via the `key` on
+  // <IosPickerModal> in SchedulePickerOverlay below, so no sync effect is needed.
   const [localDate, setLocalDate] = useState(pickerDate);
-
-  useEffect(() => {
-    setLocalDate(pickerDate);
-  }, [pickerDate, pickerTarget]);
 
   const handleSpinnerChange = useCallback(
     (event: DateTimePickerEvent, date?: Date) => {
@@ -263,5 +264,10 @@ export function SchedulePickerOverlay({
     );
   }
 
-  return <IosPickerModal {...overlayProps} />;
+  return (
+    <IosPickerModal
+      key={`${overlayProps.pickerTarget}-${overlayProps.pickerDate.getTime()}`}
+      {...overlayProps}
+    />
+  );
 }

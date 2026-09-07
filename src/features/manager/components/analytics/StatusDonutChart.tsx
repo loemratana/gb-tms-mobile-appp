@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
 
@@ -37,10 +37,11 @@ export function StatusDonutChart({ data }: StatusDonutChartProps) {
   );
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
-
-  useEffect(() => {
+  const [prevDataKey, setPrevDataKey] = useState(dataKey);
+  if (dataKey !== prevDataKey) {
+    setPrevDataKey(dataKey);
     setSelectedIndex(-1);
-  }, [dataKey]);
+  }
 
   const pieData = useMemo(
     () => toPieData(chartData, selectedIndex),

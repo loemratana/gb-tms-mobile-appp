@@ -262,8 +262,11 @@ export default function TasksScreen({
     ],
   );
 
+  // searchProgress is a stable Animated.Value ref; interpolating it and passing
+  // it straight into a style prop is the documented way to drive this animation.
   const animatedSearchHeight = useMemo(
     () =>
+      // eslint-disable-next-line react-hooks/refs
       searchProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [COLLAPSED_SEARCH_HEIGHT, searchBarHeight],
@@ -305,6 +308,7 @@ export default function TasksScreen({
               </View>
             </Pressable>
           ) : (
+            // eslint-disable-next-line react-hooks/refs -- searchProgress is a stable Animated.Value ref used directly as a style value
             <Animated.View style={{ opacity: searchProgress }}>
               <View
                 className="border-b border-[#E5E7EB] bg-white px-4 py-3"

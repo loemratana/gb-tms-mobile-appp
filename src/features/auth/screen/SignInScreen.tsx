@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -42,11 +42,9 @@ export default function SignInScreen() {
     defaultValues: { email: "", password: "" },
   });
 
-  useEffect(() => {
-    if (formError && (errors.email || errors.password)) {
-      setFormError(null);
-    }
-  }, [errors.email, errors.password, formError]);
+  // Hide the top-level sign-in error once a field-level validation error is
+  // showing, instead of syncing it away via an effect.
+  const displayedFormError = errors.email || errors.password ? null : formError;
 
   const onSubmit = async (values: SignInFormValues) => {
     setFormError(null);
@@ -163,10 +161,10 @@ export default function SignInScreen() {
               />
             </View>
 
-            {formError ? (
+            {displayedFormError ? (
               <View className="mt-4 rounded-xl bg-[#FEF2F2] px-4 py-3">
                 <Text className="text-center text-[13px] font-medium text-[#EF4444]">
-                  {formError}
+                  {displayedFormError}
                 </Text>
               </View>
             ) : null}

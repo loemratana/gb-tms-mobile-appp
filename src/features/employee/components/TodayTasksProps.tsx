@@ -148,7 +148,7 @@ export default function TodayTasks({ tasks, onSeeAll, onTaskPress }: TodayTasksP
         <View className="items-center rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-8">
           <Ionicons name="checkmark-done-circle-outline" size={24} color="#9CA3AF" />
           <Text className="mt-2 text-[13px] font-medium text-[#6B7280]">
-            You're all caught up
+            You&apos;re all caught up
           </Text>
         </View>
       ) : (

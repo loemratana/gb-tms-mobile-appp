@@ -2,7 +2,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Bell, ChevronRight, Plus, Trash2 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -72,12 +72,15 @@ export function TaskReminderSettingsCard({ taskId }: TaskReminderSettingsCardPro
   const [activeTimeIndex, setActiveTimeIndex] = useState<number | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
 
-  useEffect(() => {
-    if (!data) return;
-    setEnabled(data.enabled);
-    setTimezone(data.timezone);
-    setTimes([...data.reminderTimes].sort());
-  }, [data]);
+  const [prevData, setPrevData] = useState(data);
+  if (data !== prevData) {
+    setPrevData(data);
+    if (data) {
+      setEnabled(data.enabled);
+      setTimezone(data.timezone);
+      setTimes([...data.reminderTimes].sort());
+    }
+  }
 
   const openTimePicker = useCallback(
     (index: number) => {

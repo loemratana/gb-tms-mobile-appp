@@ -5,10 +5,9 @@ import {
   priorityColors,
   roleAccentColors,
   taskStatusColors,
-  type AppColors,
 } from "@/styles/colors";
 import { componentRadius, radius } from "@/styles/radius";
-import { applyShadow, brandShadow, cardShadow, shadows } from "@/styles/shadows";
+import { shadows } from "@/styles/shadows";
 import {
   fontFamily,
   fontSize,
@@ -84,26 +83,3 @@ export type ThemeMode = Theme["mode"];
 
 /** Active app theme — swap when dark mode is enabled */
 export const theme = lightTheme;
-
-export {
-  applyShadow,
-  brandShadow,
-  cardShadow,
-  colors,
-  componentRadius,
-  darkColors,
-  fontFamily,
-  fontSize,
-  fontWeight,
-  letterSpacing,
-  lineHeight,
-  palette,
-  priorityColors,
-  radius,
-  roleAccentColors,
-  shadows,
-  taskStatusColors,
-  textStyles,
-};
-
-export type { AppColors };

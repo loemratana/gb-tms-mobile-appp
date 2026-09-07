@@ -246,7 +246,7 @@ export const EditProfileBottomSheet = forwardRef<EditProfileBottomSheetRef>(
           />
 
           <Pressable
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => handleSubmit(onSubmit)()}
             disabled={!canSave}
             accessibilityRole="button"
             className="mt-2 items-center justify-center rounded-2xl py-4"

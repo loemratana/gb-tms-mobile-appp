@@ -84,16 +84,28 @@ export function VoiceRecordingModal({
   >([]);
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
 
+  // Reset the session's UI state during render (not the effect below) so
+  // opening the modal doesn't cost an extra commit just to clear old state.
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) {
+      setPhase("recording");
+      setTranscript("");
+      setIsEditingTranscript(false);
+    }
+  }
+
   useEffect(() => {
     if (!visible) return;
-    setPhase("recording");
-    setTranscript("");
-    setIsEditingTranscript(false);
     void recorder.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
+  // Subscribing to an external system (the recorder) and syncing its status
+  // into local phase state is the documented use case for this effect shape.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (recorder.status === "permission-denied") setPhase("permission-denied");
     if (recorder.status === "error") setPhase("error");
   }, [recorder.status]);
