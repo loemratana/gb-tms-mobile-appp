@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 
 import { ModernTabBar } from "@/features/components/navigation/ModernTabBar";
 import { MANAGER_TAB_ICONS } from "@/features/components/navigation/tabIcons";

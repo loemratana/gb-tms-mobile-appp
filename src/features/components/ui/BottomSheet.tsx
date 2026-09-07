@@ -32,7 +32,7 @@ export function SheetBackdrop({
       appearsOnIndex={0}
       opacity={0.45}
       pressBehavior={closeOnPress ? "close" : "none"}
-      style={[StyleSheet.absoluteFillObject, { backgroundColor: palette.slate[900] }]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: palette.slate[900] }]}
     />
   );
 }

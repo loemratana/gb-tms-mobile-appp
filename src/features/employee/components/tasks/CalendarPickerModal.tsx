@@ -77,7 +77,7 @@ export function CalendarPickerModal({
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(15, 23, 42, 0.45)",
   },
   centerWrap: {
