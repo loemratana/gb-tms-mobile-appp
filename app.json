@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tmsmobileapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.ratana.taskmanagement",
