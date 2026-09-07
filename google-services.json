@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1010805778919",
+    "project_id": "task-management-app-436df",
+    "storage_bucket": "task-management-app-436df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1010805778919:android:d5704f66923936cfe97542",
+        "android_client_info": {
+          "package_name": "com.ratana.taskmanagement"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1U_D_JfOzWh3PU7BLJltAvd701CrIA9A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

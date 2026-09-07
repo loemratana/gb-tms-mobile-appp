@@ -1,0 +1,33 @@
+# 🔗 Links:
+# Source file: https://github.com/obytes/react-native-template-obytes/blob/master/.github/actions/eas-build/action.yml
+# EAS Build docs: https://docs.expo.dev/eas-update/github-actions/
+
+# ✍️ Description:
+# This is a composite action, which means it can be used in other actions.
+# This action is used to trigger an EAS Build for a specific environment (development, staging, production).
+# This action accepts those inputs:
+#        `APP_ENV`, which is used to generate an APK for a specific environment (development, staging, production). We use staging by default.
+#        `AUTO_SUBMIT`, false by default, set to true if you want to automatically submit your build to stores.
+#        `EXPO_TOKEN`, required, access token for your Expo account. https://expo.dev/settings/access-tokens
+#        `VERSION`, required, version of the app to build. used as the build message.
+#        `ANDROID`, true by default, set to true if you don't want to trigger build for Android.
+#        `IOS`, false by default, set to true if you  want to trigger build for IOS.
+
+# 👀 Example usage:
+#      - name: ⏱️ EAS Build
+#        uses: ./.github/actions/eas-build
+#        with:
+#          APP_ENV: staging
+#          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+#          VERSION: ${{ github.event.release.tag_name }}
+#          IOS: false
+
+
+name: 'Setup EAS Build + Trigger Build'
+description: 'Setup EAS Build + Trigger Build'
+
+inputs: 
+  APP_ENV:
+    description: 'APP_ENV (one of): development, preview, production'
+    required: true
+    default: staging

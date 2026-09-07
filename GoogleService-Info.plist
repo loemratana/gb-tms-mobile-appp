@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyC-H6q4J1_f8fGqwoCwxw9B29r-POqqRVw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1010805778919</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.ratana.taskmanagement</string>
+	<key>PROJECT_ID</key>
+	<string>task-management-app-436df</string>
+	<key>STORAGE_BUCKET</key>
+	<string>task-management-app-436df.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1010805778919:ios:97593a6160b0fdcee97542</string>
+</dict>
+</plist>
