@@ -14,11 +14,9 @@ import { DatePreset } from "@/features/employee/components/tasks/DatePreset";
 import { DateRangeField } from "@/features/employee/components/tasks/DateRangeField";
 import { FilterActions } from "@/features/employee/components/tasks/FilterActions";
 import { FilterSection } from "@/features/employee/components/tasks/FilterSection";
-import { TimeOption } from "@/features/employee/components/tasks/TimeOption";
 import {
   DATE_PRESETS,
   EMPTY_TASK_FILTERS,
-  TIME_PRESETS,
   type DateFilterPreset,
   type TaskListFilters,
 } from "@/features/employee/utils/taskFilters";
@@ -160,23 +158,6 @@ export const TaskFilterBottomSheet = forwardRef<
                 onPressFrom={() => openDatePicker("from")}
                 onPressTo={() => openDatePicker("to")}
               />
-            </View>
-          </FilterSection>
-
-          <FilterSection title="Time">
-            <View accessibilityRole="radiogroup">
-              {TIME_PRESETS.map((chip, index) => (
-                <TimeOption
-                  key={chip.key}
-                  label={chip.label}
-                  hint={chip.hint}
-                  active={draft.timePreset === chip.key}
-                  isLast={index === TIME_PRESETS.length - 1}
-                  onPress={() =>
-                    setDraft((prev) => ({ ...prev, timePreset: chip.key }))
-                  }
-                />
-              ))}
             </View>
           </FilterSection>
 

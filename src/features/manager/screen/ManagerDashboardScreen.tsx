@@ -12,6 +12,7 @@ import {
   type ManagerAnalyticsBottomSheetRef,
 } from "@/features/manager/components/analytics/ManagerAnalyticsBottomSheet";
 import { DailyTasksSection } from "@/features/manager/components/dashboard/DailyTasksSection";
+import { ManagerDashboardSkeleton } from "@/features/manager/components/dashboard/ManagerDashboardSkeleton";
 import { TopPerformersModal } from "@/features/manager/components/top-performers/TopPerformersModal";
 import { toManagerAssignedKpis } from "@/features/manager/data/analytics";
 import {
@@ -30,7 +31,7 @@ export default function ManagerDashboardScreen() {
   const assignedById = currentUser?.id;
 
   // Same query ManagerAnalyticsSection runs — shares the React Query cache entry.
-  const { data: assignedKpi } = useManagerAssignedKpi();
+  const { data: assignedKpi, isLoading: isLoadingKpi } = useManagerAssignedKpi();
   const topPerformers = useMemo(
     () => toTopPerformers(assignedKpi?.topPerformers ?? []),
     [assignedKpi],
@@ -38,7 +39,7 @@ export default function ManagerDashboardScreen() {
 
   // Same query ManagerTasksScreen runs for its list — sharing the params
   // keeps this on the same React Query cache entry (no extra fetch).
-  const { data: tasksPage } = useTasks(
+  const { data: tasksPage, isLoading: isLoadingTasks } = useTasks(
     { assignedById, size: 200 },
     Boolean(assignedById),
   );
@@ -66,6 +67,8 @@ export default function ManagerDashboardScreen() {
     router.push("/(manager)/(tabs)/team");
   };
 
+  const isLoadingDashboard = isLoadingKpi || isLoadingTasks;
+
   return (
     <>
       <Screen
@@ -76,16 +79,20 @@ export default function ManagerDashboardScreen() {
           />
         }
       >
-        <View className="gap-6">
-          {assignedKpi ? (
-            <AnalyticsHeroCard kpis={toManagerAssignedKpis(assignedKpi)} />
-          ) : null}
-          <DailyTasksSection tasks={tasks} />
-          <TeamPreview
-            onSeeAll={openTeamScreen}
-            onMemberPress={openTeamMember}
-          />
-        </View>
+        {isLoadingDashboard ? (
+          <ManagerDashboardSkeleton />
+        ) : (
+          <View className="gap-6">
+            {assignedKpi ? (
+              <AnalyticsHeroCard kpis={toManagerAssignedKpis(assignedKpi)} />
+            ) : null}
+            <DailyTasksSection tasks={tasks} />
+            <TeamPreview
+              onSeeAll={openTeamScreen}
+              onMemberPress={openTeamMember}
+            />
+          </View>
+        )}
       </Screen>
 
       <ManagerAnalyticsBottomSheet

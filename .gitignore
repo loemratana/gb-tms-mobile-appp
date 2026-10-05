@@ -31,10 +31,15 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # Claude Code personal/local overrides
 .claude/settings.local.json
+
+# Firebase Admin SDK service account keys — live credentials, never commit
+*firebase-adminsdk*.json
+serviceAccountKey.json
 
 # typescript
 *.tsbuildinfo

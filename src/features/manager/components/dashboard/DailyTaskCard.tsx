@@ -1,6 +1,6 @@
 import { Calendar, ChevronRight, Flag } from "lucide-react-native";
 import { useMemo } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import {
     formatDate,
@@ -12,16 +12,6 @@ import {
 import type { Task, TaskPriority } from "@/features/employee/types/types";
 import { StatusBadge } from "@/features/manager/components/task/StatusBadge";
 import { TaskSubtaskPreview } from "@/features/manager/components/task/TaskSubtaskPreview";
-
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-  },
-  default: {},
-});
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: "#32CD32",
@@ -60,7 +50,6 @@ export function DailyTaskCard({ task, allTasks, onPress }: DailyTaskCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`Open task ${task.title}`}
       className="mr-3 w-[288px] rounded-2xl border border-[#E5E7EB] bg-white p-4"
-      style={CARD_SHADOW}
     >
       <View className="flex-row items-center justify-between gap-2">
         <Text

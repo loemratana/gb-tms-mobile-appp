@@ -7,6 +7,7 @@ import {
   EditProfileBottomSheet,
   type EditProfileBottomSheetRef,
 } from "@/features/employee/components/profile/EditProfileBottomSheet";
+import { debugGetFcmToken, sendMockPushNotification } from "@/lib/pushNotifications";
 import { ProfileHeader } from "@/features/employee/components/profile/ProfileHeader";
 import { ProfileHeroCard } from "@/features/employee/components/profile/ProfileHeroCard";
 import { ProfileSkeleton } from "@/features/employee/components/profile/ProfileSkeleton";
@@ -148,6 +149,32 @@ export default function ProfileScreen({
           <WorkspaceSection workspace={workspaceInfo} />
           <RecentActivity items={recentActivity} />
           <SettingsMenu items={settingsItems} onPressItem={handleMenuItem} />
+
+          {__DEV__ ? (
+            <Pressable
+              onPress={() => void sendMockPushNotification()}
+              accessibilityRole="button"
+              accessibilityLabel="Send test notification"
+              className="h-[52px] items-center justify-center rounded-xl border border-dashed border-[#9CA3AF]"
+            >
+              <Text className="text-[14px] font-semibold text-[#6B7280]">
+                DEV: Send Test Notification
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {__DEV__ ? (
+            <Pressable
+              onPress={() => void debugGetFcmToken()}
+              accessibilityRole="button"
+              accessibilityLabel="Get FCM token"
+              className="h-[52px] items-center justify-center rounded-xl border border-dashed border-[#9CA3AF]"
+            >
+              <Text className="text-[14px] font-semibold text-[#6B7280]">
+                DEV: Get FCM Token
+              </Text>
+            </Pressable>
+          ) : null}
 
           <Pressable
             onPress={handleSignOut}

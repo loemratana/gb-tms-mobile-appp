@@ -5,7 +5,7 @@ import { SkeletonBlock, SkeletonCircle } from "@/features/components/ui/Skeleton
 /** Loading placeholder for a single {@link TeamMemberCard} row. */
 function TeamMemberCardSkeleton() {
   return (
-    <View className="mb-3 rounded-2xl border border-[#E5E7EB] bg-white p-4">
+    <View className="border-b border-[#F3F4F6] py-4">
       <View className="flex-row items-center">
         <SkeletonCircle size={48} className="mr-3" />
         <View className="min-w-0 flex-1 gap-1.5">

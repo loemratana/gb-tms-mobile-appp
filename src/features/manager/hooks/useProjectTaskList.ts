@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { isSubtask } from "@/features/employee/helpers/helpers";
 import type { Task } from "@/features/employee/types/types";
+import { useTaskContext } from "@/hooks/useTaskContext";
 import {
   filterProjectTasks,
   getProjectTaskProgress,
@@ -9,11 +10,11 @@ import {
   type ProjectTaskFilter,
   type ProjectTaskSort,
 } from "@/features/manager/utils/projectTasks";
-import { useTasksStore } from "@/stores/tasksStore";
 
 export function useProjectTaskList(projectName: string | undefined) {
-  const allTasks = useTasksStore((s) => s.tasks);
-  const createTask = useTasksStore((s) => s.createTask);
+  // Shared task state — reused as-is from Context, not copied into local state.
+  const { tasks: allTasks, loading, error, addTask, completeTask, deleteTask, clearError } =
+    useTaskContext();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ProjectTaskFilter>("all");
   const [sort, setSort] = useState<ProjectTaskSort>("recent");
@@ -38,12 +39,17 @@ export function useProjectTaskList(projectName: string | undefined) {
     filteredTasks,
     completedCount,
     progress,
+    loading,
+    error,
     search,
     setSearch,
     filter,
     setFilter,
     sort,
     setSort,
-    createTask,
+    addTask,
+    completeTask,
+    deleteTask,
+    clearError,
   };
 }

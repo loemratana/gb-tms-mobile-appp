@@ -68,7 +68,7 @@ export default function TeamScreen({ bottomInset = 32 }: { bottomInset?: number 
   };
 
   return (
-    <View className="flex-1 bg-[#F5F7FB]">
+    <View className="flex-1 bg-white">
       <TeamHeader
         onPressSearch={() => setSearchOpen((prev) => !prev)}
         onPressFilter={() =>
@@ -119,39 +119,37 @@ export default function TeamScreen({ bottomInset = 32 }: { bottomInset?: number 
           contentContainerStyle={{ paddingBottom: bottomInset }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="gap-6 px-5 pt-4">
-            <TeamHeroCard team={team} members={allMembers} />
+          <TeamHeroCard team={team} members={allMembers} />
 
-            <View>
-              <View className="mb-3 flex-row items-center justify-between">
-                <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">
-                  Teammates
+          <View className="px-5 pt-6">
+            <View className="mb-1 flex-row items-center justify-between">
+              <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">
+                Teammates
+              </Text>
+              <Text className="text-[12px] font-medium text-[#6B7280]">
+                {allMembers.length} members
+              </Text>
+            </View>
+
+            {filteredMembers.length === 0 ? (
+              <View className="items-center rounded-2xl border border-dashed border-[#D1D5DB] px-4 py-10">
+                <Text className="text-base font-bold text-[#111827]">
+                  No members found
                 </Text>
-                <Text className="text-[12px] font-medium text-[#6B7280]">
-                  {allMembers.length} members
+                <Text className="mt-1 text-center text-xs text-[#6B7280]">
+                  Try a different search
                 </Text>
               </View>
-
-              {filteredMembers.length === 0 ? (
-                <View className="items-center rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-10">
-                  <Text className="text-base font-bold text-[#111827]">
-                    No members found
-                  </Text>
-                  <Text className="mt-1 text-center text-xs text-[#6B7280]">
-                    Try a different search
-                  </Text>
-                </View>
-              ) : (
-                filteredMembers.map((member) => (
-                  <TeamMemberCard
-                    key={member.id}
-                    member={member}
-                    onPress={openMember}
-                    onViewDetails={openMember}
-                  />
-                ))
-              )}
-            </View>
+            ) : (
+              filteredMembers.map((member) => (
+                <TeamMemberCard
+                  key={member.id}
+                  member={member}
+                  onPress={openMember}
+                  onViewDetails={openMember}
+                />
+              ))
+            )}
           </View>
         </ScrollView>
       )}

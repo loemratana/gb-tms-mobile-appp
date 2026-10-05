@@ -56,4 +56,6 @@ export interface Task {
   parentId?: string;
   subtasks?: TaskSubtaskSummary[];
   activities?: TaskActivity[];
+  commentCount?: number;
+  attachmentCount?: number;
 }

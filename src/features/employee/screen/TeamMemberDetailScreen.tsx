@@ -52,7 +52,7 @@ function MemberDetailSkeleton() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}
     >
-      <View className="rounded-3xl border border-[#E5E7EB] bg-white p-4">
+      <View>
         <View className="flex-row items-center">
           <SkeletonCircle size={64} className="mr-3" />
           <View className="min-w-0 flex-1 gap-1.5">
@@ -67,7 +67,7 @@ function MemberDetailSkeleton() {
         </View>
       </View>
 
-      <View className="mt-5 gap-3 rounded-3xl border border-[#E5E7EB] bg-white p-4">
+      <View className="mt-6 gap-3 border-t border-[#F3F4F6] pt-6">
         <SkeletonBlock height={14} className="w-1/2" />
         <SkeletonBlock height={11} className="w-full" />
         <SkeletonBlock height={11} className="w-3/4" />
@@ -99,7 +99,7 @@ export default function TeamMemberDetailScreen() {
 
   if (isLoadingMember) {
     return (
-      <View className="flex-1 bg-[#F3F4F6]">
+      <View className="flex-1 bg-white">
         <DetailHeader title="Employee Detail" onBack={() => router.back()} />
         <MemberDetailSkeleton />
       </View>
@@ -108,7 +108,7 @@ export default function TeamMemberDetailScreen() {
 
   if (isMemberError || !member) {
     return (
-      <View className="flex-1 bg-[#F3F4F6]">
+      <View className="flex-1 bg-white">
         <DetailHeader title="Employee Detail" onBack={() => router.back()} />
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base font-bold text-[#111827]">
@@ -127,7 +127,7 @@ export default function TeamMemberDetailScreen() {
   const memberIsManager = isManager(member);
 
   return (
-    <View className="flex-1 bg-[#F3F4F6]">
+    <View className="flex-1 bg-white">
       <DetailHeader title={member.fullName} onBack={() => router.back()} />
 
       <ScrollView
@@ -135,16 +135,7 @@ export default function TeamMemberDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}
       >
-        <View
-          className="rounded-3xl border border-[#E5E7EB] bg-white p-4"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
+        <View>
           <View className="flex-row items-center">
             <Image
               source={{ uri: member.avatarUrl ?? fallbackAvatar(member.fullName) }}
@@ -195,7 +186,7 @@ export default function TeamMemberDetailScreen() {
           />
         </View>
 
-        <View className="mt-5">
+        <View className="mt-6 border-t border-[#F3F4F6] pt-6">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">
               Assigned Tasks
@@ -219,16 +210,18 @@ export default function TeamMemberDetailScreen() {
               </Text>
             </View>
           ) : (
-            memberTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                currentUserId={currentUser?.id}
-                onPress={(t) =>
-                  router.push({ pathname: "/(employee)/tasks/[id]", params: { id: t.id } })
-                }
-              />
-            ))
+            <View className="gap-3">
+              {memberTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  currentUserId={currentUser?.id}
+                  onPress={(t) =>
+                    router.push({ pathname: "/(employee)/tasks/[id]", params: { id: t.id } })
+                  }
+                />
+              ))}
+            </View>
           )}
         </View>
       </ScrollView>

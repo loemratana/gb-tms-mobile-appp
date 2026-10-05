@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Bell, CheckCircle2, MessageSquare, RefreshCw, XCircle } from "lucide-react-native";
-import { Image, Platform, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 import {
   formatNotificationTime,
@@ -9,57 +9,35 @@ import {
   getSenderAvatarUrl,
 } from "@/features/employee/helpers/notifications";
 import type { Notification, NotificationType } from "@/features/employee/types/notification";
+import { colors, palette } from "@/styles";
 
-const TYPE_THEME: Record<
-  NotificationType,
-  { accent: string; iconBg: string }
-> = {
-  TASK_ASSIGNED: { accent: "#22C55E", iconBg: "#ECFDF5" },
-  TASK_APPROVED: { accent: "#22C55E", iconBg: "#ECFDF5" },
-  TASK_REJECTED: { accent: "#EF4444", iconBg: "#FEF2F2" },
-  COMMENT: { accent: "#3B82F6", iconBg: "#EFF6FF" },
-  STATUS_UPDATE: { accent: "#8B5CF6", iconBg: "#F5F3FF" },
-  TASK_REMINDER: { accent: "#F59E0B", iconBg: "#FFFBEB" },
-  PROJECT_CREATED: { accent: "#32CD32", iconBg: "#ECFDF5" },
+const TYPE_THEME: Record<NotificationType, { accent: string }> = {
+  TASK_ASSIGNED: { accent: colors.success },
+  TASK_APPROVED: { accent: colors.success },
+  TASK_REJECTED: { accent: colors.danger },
+  COMMENT: { accent: palette.blue[500] },
+  STATUS_UPDATE: { accent: palette.violet[500] },
+  TASK_REMINDER: { accent: colors.warning },
+  PROJECT_CREATED: { accent: colors.brand },
 };
 
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-  },
-  android: { elevation: 2 },
-});
-
-function NotificationTypeIcon({ type }: { type: NotificationType }) {
-  const theme = TYPE_THEME[type];
-  const size = 18;
-
-  const icon =
-    type === "TASK_ASSIGNED" || type === "TASK_APPROVED" ? (
-      <CheckCircle2 size={size} color={theme.accent} strokeWidth={2.2} />
-    ) : type === "TASK_REJECTED" ? (
-      <XCircle size={size} color={theme.accent} strokeWidth={2.2} />
-    ) : type === "COMMENT" ? (
-      <MessageSquare size={size} color={theme.accent} strokeWidth={2.2} />
-    ) : type === "PROJECT_CREATED" ? (
-      <CheckCircle2 size={size} color={theme.accent} strokeWidth={2.2} />
-    ) : type === "TASK_REMINDER" ? (
-      <Bell size={size} color={theme.accent} strokeWidth={2.2} />
-    ) : (
-      <RefreshCw size={size} color={theme.accent} strokeWidth={2.2} />
-    );
-
-  return (
-    <View
-      className="h-10 w-10 items-center justify-center rounded-xl"
-      style={{ backgroundColor: theme.iconBg }}
-    >
-      {icon}
-    </View>
-  );
+/** Small white glyph shown on the avatar's type badge — sized/colored by the caller. */
+function TypeGlyph({ type, size, color }: { type: NotificationType; size: number; color: string }) {
+  switch (type) {
+    case "TASK_ASSIGNED":
+    case "TASK_APPROVED":
+      return <CheckCircle2 size={size} color={color} strokeWidth={2.4} />;
+    case "TASK_REJECTED":
+      return <XCircle size={size} color={color} strokeWidth={2.4} />;
+    case "COMMENT":
+      return <MessageSquare size={size} color={color} strokeWidth={2.4} />;
+    case "PROJECT_CREATED":
+      return <CheckCircle2 size={size} color={color} strokeWidth={2.4} />;
+    case "TASK_REMINDER":
+      return <Bell size={size} color={color} strokeWidth={2.4} />;
+    default:
+      return <RefreshCw size={size} color={color} strokeWidth={2.4} />;
+  }
 }
 
 type NotificationItemProps = {
@@ -79,6 +57,7 @@ export function NotificationItem({
     notification.sender,
     notification.senderAvatarUrl
   );
+  const theme = TYPE_THEME[notification.type];
 
   return (
     <Pressable
@@ -86,49 +65,62 @@ export function NotificationItem({
       onLongPress={() => onLongPress(notification)}
       delayLongPress={400}
       accessibilityRole="button"
-      className="mb-3 rounded-2xl bg-white p-4"
-      style={[
-        CARD_SHADOW,
-        { opacity: notification.isRead ? 0.88 : 1 },
-      ]}
+      className="flex-row items-center gap-3 border-b py-4"
+      style={{ borderColor: colors.border }}
     >
-      <View className="flex-row gap-3">
-        <NotificationTypeIcon type={notification.type} />
+      {/* Left column: sender avatar, with the notification type as a corner badge. */}
+      <View className="relative">
+        <Image
+          source={{ uri: avatarUrl }}
+          className="h-16 w-16 rounded-full"
+          style={{ backgroundColor: colors.border }}
+        />
+        <View
+          className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full border-2"
+          style={{ backgroundColor: theme.accent, borderColor: colors.card }}
+        >
+          <TypeGlyph type={notification.type} size={13} color={colors.textInverse} />
+        </View>
+      </View>
 
-        <View className="min-w-0 flex-1">
-          <View className="flex-row items-center gap-2">
-            <Image
-              source={{ uri: avatarUrl }}
-              className="h-8 w-8 rounded-full bg-[#E5E7EB]"
-            />
-            <Text
-              numberOfLines={1}
-              className="flex-1 text-[14px] font-bold text-[#111827]"
-            >
-              {notification.sender}
-            </Text>
-            {!notification.isRead ? (
-              <View className="h-2 w-2 rounded-full bg-[#32CD32]" />
-            ) : null}
-          </View>
-
-          <Text className="mt-1 text-[13px] font-medium text-[#374151]">
-            {actionText}
-          </Text>
-
+      {/* Right column: sender, message, timestamp. */}
+      <View className="min-w-0 flex-1">
+        <View className="flex-row items-center gap-2">
           <Text
-            numberOfLines={2}
-            className="mt-1 text-[13px] leading-5 text-[#6B7280]"
+            numberOfLines={1}
+            className="flex-1 text-[14px] font-bold"
+            style={{ color: colors.text }}
           >
-            {contentText}
+            {notification.sender}
           </Text>
+          {!notification.isRead ? (
+            <View
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: colors.brand }}
+            />
+          ) : null}
+        </View>
 
-          <View className="mt-2 flex-row items-center gap-1">
-            <Ionicons name="time-outline" size={12} color="#9CA3AF" />
-            <Text className="text-[11px] text-[#9CA3AF]">
-              {formatNotificationTime(notification.timestamp)}
-            </Text>
-          </View>
+        <Text
+          className="mt-1 text-[13px] font-medium"
+          style={{ color: colors.textSecondary }}
+        >
+          {actionText}
+        </Text>
+
+        <Text
+          numberOfLines={2}
+          className="mt-1 text-[13px] leading-5"
+          style={{ color: colors.textMuted }}
+        >
+          {contentText}
+        </Text>
+
+        <View className="mt-2 flex-row items-center gap-1">
+          <Ionicons name="time-outline" size={12} color={colors.textSubtle} />
+          <Text className="text-[11px]" style={{ color: colors.textSubtle }}>
+            {formatNotificationTime(notification.timestamp)}
+          </Text>
         </View>
       </View>
     </Pressable>

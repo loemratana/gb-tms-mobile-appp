@@ -2,6 +2,7 @@ import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Pressable, Text, View } from "react-native";
 
 import type { NotificationFilter } from "@/features/employee/types/notification";
+import { colors } from "@/styles";
 
 const TABS: { key: NotificationFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -17,7 +18,10 @@ type FilterTabsProps = {
 
 export function FilterTabs({ active, onChange }: FilterTabsProps) {
   return (
-    <View className="border-b border-[#E5E7EB] bg-white pb-2 pt-2">
+    <View
+      className="border-b pb-2 pt-2"
+      style={{ borderColor: colors.border, backgroundColor: colors.card }}
+    >
       <BottomSheetScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -34,14 +38,14 @@ export function FilterTabs({ active, onChange }: FilterTabsProps) {
               accessibilityState={{ selected: isActive }}
               className="rounded-full px-4 py-2"
               style={{
-                backgroundColor: isActive ? "#111827" : "#F3F4F6",
+                backgroundColor: isActive ? colors.text : colors.mutedBg,
                 borderWidth: isActive ? 0 : 1,
-                borderColor: "#E5E7EB",
+                borderColor: colors.border,
               }}
             >
               <Text
                 className="text-[13px] font-semibold"
-                style={{ color: isActive ? "#FFFFFF" : "#6B7280" }}
+                style={{ color: isActive ? colors.textInverse : colors.textMuted }}
               >
                 {tab.label}
               </Text>

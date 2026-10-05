@@ -38,13 +38,6 @@ function DashboardTaskCard({
       accessibilityRole="button"
       accessibilityLabel={task.title}
       className="mr-3 w-72 rounded-2xl border border-[#E5E7EB] bg-white p-4"
-      style={{
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 2,
-      }}
     >
       <View className="flex-row items-center gap-1.5">
         <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: statusColor }} />

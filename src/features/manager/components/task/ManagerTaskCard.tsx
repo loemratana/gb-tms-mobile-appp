@@ -7,7 +7,7 @@ import {
     Paperclip,
 } from "lucide-react-native";
 import { memo, type ReactNode } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import {
     formatDate,
@@ -25,16 +25,6 @@ import { SegmentedProgressBar } from "@/features/manager/components/task/Segment
 import { StatusBadge } from "@/features/manager/components/task/StatusBadge";
 import { TaskSubtaskPreview } from "@/features/manager/components/task/TaskSubtaskPreview";
 
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-  },
-  default: {},
-});
-
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: "#32CD32",
   medium: "#F59E0B",
@@ -50,16 +40,6 @@ type ManagerTaskCardProps = {
   attachmentCount?: number;
 };
 
-function countComments(task: Task) {
-  return task.activities?.filter((item) => item.type === "comment").length ?? 0;
-}
-
-function countAttachments(task: Task) {
-  return (
-    task.activities?.filter((item) => item.type === "work_update").length ?? 0
-  );
-}
-
 export const ManagerTaskCard = memo(function ManagerTaskCard({
   task,
   subtasks = [],
@@ -73,8 +53,8 @@ export const ManagerTaskCard = memo(function ManagerTaskCard({
       ? getSubtaskCompletionProgress(subtasks)
       : task.progress;
 
-  const comments = commentCount ?? countComments(task);
-  const attachments = attachmentCount ?? countAttachments(task);
+  const comments = commentCount ?? task.commentCount ?? 0;
+  const attachments = attachmentCount ?? task.attachmentCount ?? 0;
   const priorityColor = PRIORITY_COLORS[task.priority];
 
   const handleSubtaskPress = (subtaskId: string) => {
@@ -85,15 +65,12 @@ export const ManagerTaskCard = memo(function ManagerTaskCard({
   };
 
   return (
-    <View
-      className="mb-4 overflow-hidden rounded-3xl border border-[#F3F4F6] bg-white"
-      style={CARD_SHADOW}
-    >
+    <View className="overflow-hidden rounded-xl border border-[#F3F4F6] bg-white">
       <Pressable
         onPress={() => onPress?.(task)}
         accessibilityRole="button"
         accessibilityLabel={`Open task ${task.title}`}
-        className="p-5"
+        className="p-3"
       >
         <View className="flex-row items-center justify-between gap-3">
           <View className="min-w-0 flex-1">

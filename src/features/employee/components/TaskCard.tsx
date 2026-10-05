@@ -7,7 +7,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-import { applyShadow, pressScale, shadows } from "@/styles";
+import { pressScale } from "@/styles";
 
 import {
   formatDate,
@@ -62,7 +62,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   }, [scale]);
 
   return (
-    <Animated.View style={[animatedStyle, { width: "100%" }]} className="mb-3">
+    <Animated.View style={[animatedStyle, { width: "100%" }]}>
       <Pressable
         onPress={() => onPress?.(task)}
         onPressIn={handlePressIn}
@@ -70,7 +70,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         accessibilityRole="button"
         accessibilityLabel={task.title}
         className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-4"
-        style={applyShadow(shadows.sm)}
       >
         <View className="flex-row items-start justify-between gap-3">
           <View className="min-w-0 flex-1 flex-row items-start gap-2.5">

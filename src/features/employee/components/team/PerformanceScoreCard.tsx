@@ -29,7 +29,7 @@ function metricToneColor(tone: PerformanceMetric["tone"]) {
 
 function KpiMetricCard({ label, value, tone = "default" }: PerformanceMetric) {
   return (
-    <View className="w-[48.5%] rounded-2xl border border-[#E5E7EB] bg-white p-3">
+    <View className="w-[48.5%] border-b border-[#F3F4F6] pb-3">
       <Text className="text-[11px] font-medium text-[#6B7280]">{label}</Text>
       <Text
         className="mt-1 text-[16px] font-bold"
@@ -66,16 +66,7 @@ export function PerformanceScoreCard({
         </Pressable>
       ) : null}
 
-      <View
-        className="rounded-3xl border border-[#E5E7EB] bg-white p-4"
-        style={{
-          shadowColor: "#0F172A",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.04,
-          shadowRadius: 6,
-          elevation: 1,
-        }}
-      >
+      <View className="border-t border-[#F3F4F6] pt-4">
         <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">
           Performance Score
         </Text>

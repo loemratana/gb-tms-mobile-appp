@@ -5,45 +5,40 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { TaskAttachment } from "@/features/manager/data/taskDetail";
-
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-  },
-  android: { elevation: 2 },
-});
+import {
+  formatAttachmentSize,
+  isImageAttachment,
+} from "@/features/tasks/utils/attachment.utils";
+import type { TaskAttachmentResponse } from "@/features/tasks/types/attachment.types";
 
 type AttachmentsSectionProps = {
-  attachments: TaskAttachment[];
+  attachments: TaskAttachmentResponse[];
 };
 
 export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
   const insets = useSafeAreaInsets();
-  const [imagePreview, setImagePreview] = useState<TaskAttachment | null>(null);
+  const [imagePreview, setImagePreview] = useState<TaskAttachmentResponse | null>(
+    null
+  );
   const [openingId, setOpeningId] = useState<string | null>(null);
 
   if (attachments.length === 0) return null;
 
-  const handlePress = async (file: TaskAttachment) => {
-    if (file.type === "image") {
+  const handlePress = async (file: TaskAttachmentResponse) => {
+    if (isImageAttachment(file)) {
       setImagePreview(file);
       return;
     }
 
     setOpeningId(file.id);
     try {
-      await WebBrowser.openBrowserAsync(file.uri, {
+      await WebBrowser.openBrowserAsync(file.downloadUrl, {
         presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
         enableBarCollapsing: true,
       });
@@ -61,6 +56,7 @@ export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
       <View className="gap-2.5">
         {attachments.map((file) => {
           const isOpening = openingId === file.id;
+          const isImage = isImageAttachment(file);
 
           return (
             <Pressable
@@ -68,13 +64,12 @@ export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
               onPress={() => handlePress(file)}
               disabled={isOpening}
               accessibilityRole="button"
-              accessibilityLabel={`Preview ${file.name}`}
-              className="flex-row items-center rounded-2xl border border-[#F3F4F6] bg-white p-3"
-              style={CARD_SHADOW}
+              accessibilityLabel={`Preview ${file.originalName}`}
+              className="flex-row items-center rounded-2xl border border-[#F3F4F6] p-3"
             >
-              {file.type === "image" ? (
+              {isImage ? (
                 <Image
-                  source={{ uri: file.uri }}
+                  source={{ uri: file.downloadUrl }}
                   className="mr-3 rounded-xl bg-[#F3F4F6]"
                   style={{ width: 56, height: 56 }}
                   contentFit="cover"
@@ -88,9 +83,11 @@ export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
 
               <View className="min-w-0 flex-1">
                 <Text className="text-[14px] font-semibold text-[#111827]" numberOfLines={1}>
-                  {file.name}
+                  {file.originalName}
                 </Text>
-                <Text className="mt-0.5 text-[12px] text-[#9CA3AF]">{file.size}</Text>
+                <Text className="mt-0.5 text-[12px] text-[#9CA3AF]">
+                  {formatAttachmentSize(file.fileSize)}
+                </Text>
                 <Text className="mt-1 text-[11px] font-medium text-[#32CD32]">
                   Tap to preview
                 </Text>
@@ -114,9 +111,11 @@ export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
           <View className="flex-row items-center justify-between px-4 py-3">
             <View className="min-w-0 flex-1 pr-3">
               <Text className="text-[15px] font-semibold text-white" numberOfLines={1}>
-                {imagePreview?.name}
+                {imagePreview?.originalName}
               </Text>
-              <Text className="mt-0.5 text-[12px] text-white/70">{imagePreview?.size}</Text>
+              <Text className="mt-0.5 text-[12px] text-white/70">
+                {imagePreview ? formatAttachmentSize(imagePreview.fileSize) : null}
+              </Text>
             </View>
             <Pressable
               onPress={() => setImagePreview(null)}
@@ -130,7 +129,7 @@ export function AttachmentsSection({ attachments }: AttachmentsSectionProps) {
 
           {imagePreview ? (
             <Image
-              source={{ uri: imagePreview.uri }}
+              source={{ uri: imagePreview.downloadUrl }}
               style={{ flex: 1, marginBottom: insets.bottom }}
               contentFit="contain"
               transition={200}

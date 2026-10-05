@@ -106,5 +106,7 @@ export function mapTaskResponseToEmployeeTask(response: TaskResponse): Task {
     parentId: response.parentTaskId ?? undefined,
     team: response.department?.name,
     activities: deriveActivities(response),
+    commentCount: response.commentCount ?? response.comments?.length ?? 0,
+    attachmentCount: response.attachmentCount ?? response.attachments?.length ?? 0,
   };
 }

@@ -9,8 +9,8 @@ import { SkeletonBlock, SkeletonCircle } from "@/features/components/ui/Skeleton
  */
 export function TaskDetailSkeleton() {
   return (
-    <View className="gap-5 px-4 pt-4">
-      <View className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
+    <View className="px-4 pt-4">
+      <View>
         <View className="flex-row items-center gap-2">
           <SkeletonBlock width={8} height={8} radius={4} />
           <SkeletonBlock height={11} className="w-1/4" />
@@ -25,7 +25,7 @@ export function TaskDetailSkeleton() {
         <SkeletonBlock height={6} radius={999} className="mt-4 w-full" />
       </View>
 
-      <View className="flex-row items-center rounded-3xl border border-[#E5E7EB] bg-white px-4 py-4">
+      <View className="mt-6 flex-row items-center border-t border-[#F3F4F6] pt-6">
         <View className="flex-1 flex-row items-center gap-2.5">
           <SkeletonCircle size={44} />
           <View className="flex-1 gap-1.5">
@@ -40,7 +40,7 @@ export function TaskDetailSkeleton() {
         </View>
       </View>
 
-      <View className="rounded-3xl border border-[#E5E7EB] bg-white px-4 py-2">
+      <View className="mt-6 border-t border-[#F3F4F6] pt-6">
         {[0, 1, 2].map((row) => (
           <View key={row} className="flex-row items-start gap-3 py-3.5">
             <SkeletonCircle size={36} />

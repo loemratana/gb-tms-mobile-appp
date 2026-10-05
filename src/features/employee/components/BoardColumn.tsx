@@ -29,16 +29,7 @@ function BoardTaskCard({
   const priorityLabel = getPriorityLabel(task.priority);
 
   return (
-    <View
-      className="mb-2.5 flex-row overflow-hidden rounded-2xl border border-gray-200 bg-white"
-      style={{
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
-    >
+    <View className="mb-2.5 flex-row overflow-hidden rounded-2xl border border-gray-200 bg-white">
       {/* Drag handle only */}
       <Draggable
         id={task.id}

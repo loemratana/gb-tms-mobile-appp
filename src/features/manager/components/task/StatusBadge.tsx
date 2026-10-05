@@ -23,12 +23,9 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <View
       className="rounded-full px-2.5 py-1"
-      style={{ backgroundColor: config.bg }}
+      style={{ backgroundColor: config.color }}
     >
-      <Text
-        className="text-[10px] font-bold tracking-wide"
-        style={{ color: config.color }}
-      >
+      <Text className="text-[10px] font-bold tracking-wide text-white">
         {config.label}
       </Text>
     </View>

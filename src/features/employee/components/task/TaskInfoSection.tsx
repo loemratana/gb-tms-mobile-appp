@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Text, View } from "react-native";
 
-import { CARD_SHADOW } from "@/features/employee/components/task/cardStyles";
 import { formatDate } from "@/features/employee/helpers/helpers";
 import type { Task } from "@/features/employee/types/types";
 
@@ -57,10 +56,7 @@ export function TaskInfoSection({ task }: TaskInfoSectionProps) {
         Task information
       </Text>
 
-      <View
-        className="rounded-3xl border border-[#E5E7EB] bg-white px-2 py-1"
-        style={CARD_SHADOW}
-      >
+      <View>
         {ROWS.map((row, index) => (
           <View
             key={row.key}

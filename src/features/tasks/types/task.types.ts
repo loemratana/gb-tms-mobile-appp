@@ -1,3 +1,5 @@
+import type { TaskAttachmentResponse } from "@/features/tasks/types/attachment.types";
+
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export type TaskStatus =
@@ -55,6 +57,12 @@ export type TaskResponse = {
   createdAt: string;
   updatedAt: string;
   progress: number;
+  /** Cheap counts for list/card views, always populated. */
+  commentCount?: number;
+  attachmentCount?: number;
+  /** Full comment/attachment lists — only populated on the single-task detail endpoint (GET /tasks/{id}). */
+  comments?: TaskCommentResponse[];
+  attachments?: TaskAttachmentResponse[];
 };
 
 export type PageResponse<T> = {
@@ -142,9 +150,11 @@ export type UpdateTaskReminderSettingsRequest = {
 
 export type TaskCommentResponse = {
   id: string;
+  taskId?: string;
   content: string;
   author: TaskParticipant | null;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type CreateTaskCommentRequest = {

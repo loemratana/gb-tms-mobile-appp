@@ -21,7 +21,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 
-import { useFloatingTabBarInset } from "@/features/components/navigation/ModernTabBar";
+import { useTabBarInset } from "@/features/components/navigation/ModernTabBar";
 import { TaskCard } from "@/features/employee/components/TaskCard";
 import { TaskListSkeleton } from "@/features/employee/components/TaskCardSkeleton";
 import { ActiveFiltersBar } from "@/features/employee/components/tasks/ActiveFiltersBar";
@@ -43,7 +43,6 @@ import {
   getActiveFilterChips,
   hasActiveTaskFilters,
   matchesTaskDateFilter,
-  matchesTaskTimeFilter,
   removeActiveFilterChip,
   type TaskListFilters,
 } from "@/features/employee/utils/taskFilters";
@@ -85,8 +84,8 @@ export default function TasksScreen({
   // The floating tab bar (and, for managers, its FAB) sits below this list —
   // without this, the last card renders hidden behind it. Callers can still
   // override with a specific value; this is just a correct default.
-  const floatingTabBarInset = useFloatingTabBarInset();
-  const resolvedListBottomInset = listBottomInset ?? floatingTabBarInset;
+  const tabBarInset = useTabBarInset();
+  const resolvedListBottomInset = listBottomInset ?? tabBarInset;
 
   // No pagination UI yet — filtering below is client-side, so pull a
   // generous page rather than build screen-specific paginated endpoints.
@@ -154,7 +153,6 @@ export default function TasksScreen({
     return tasks.filter((task) => {
       if (isSubtask(task)) return false;
       if (!matchesTaskDateFilter(task, filters)) return false;
-      if (!matchesTaskTimeFilter(task, filters)) return false;
       if (!matchesTaskStatusFilter(task, statusFilter)) return false;
       return matchesTaskSearch(task, debouncedQuery);
     });
@@ -348,6 +346,7 @@ export default function TasksScreen({
         drawDistance={320}
         keyExtractor={(item) => item.id}
         renderItem={renderListItem}
+        ItemSeparatorComponent={() => <View className="h-3" />}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{

@@ -2,7 +2,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 
 import { Container } from "@/features/components/layout/Container";
-import { useFloatingTabBarInset } from "@/features/components/navigation/ModernTabBar";
+import { useTabBarInset } from "@/features/components/navigation/ModernTabBar";
 
 type ScreenProps = PropsWithChildren<{
   /** Optional fixed header above scroll content (per-tab flexible). */
@@ -33,7 +33,7 @@ export function Screen({
   padded = true,
   floatingTabBar = false,
 }: ScreenProps) {
-  const tabBarInset = useFloatingTabBarInset();
+  const tabBarInset = useTabBarInset();
   const bottomPadding = floatingTabBar ? tabBarInset : 24;
 
   return (

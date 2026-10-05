@@ -13,16 +13,7 @@ export function TeamHeroCard({ team, members }: TeamHeroCardProps) {
   const preview = members.slice(0, 5);
 
   return (
-    <View
-      className="overflow-hidden rounded-3xl"
-      style={{
-        shadowColor: "#1E40AF",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.18,
-        shadowRadius: 18,
-        elevation: 5,
-      }}
-    >
+    <View className="overflow-hidden">
       <LinearGradient
         colors={["#1E3A8A", "#2563EB", "#3B82F6"]}
         start={{ x: 0, y: 0 }}

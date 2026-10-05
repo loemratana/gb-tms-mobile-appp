@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
+import { listTaskAttachments } from "@/services/attachments.service";
 import {
   getManagerAssignedKpi,
   getMyKpiSummary,
@@ -17,6 +18,7 @@ export const taskKeys = {
   details: () => [...taskKeys.all, "detail"] as const,
   detail: (id: string) => [...taskKeys.details(), id] as const,
   comments: (id: string) => [...taskKeys.detail(id), "comments"] as const,
+  attachments: (id: string) => [...taskKeys.detail(id), "attachments"] as const,
   reminderSettings: (id: string) =>
     [...taskKeys.detail(id), "reminder-settings"] as const,
   myKpi: () => [...taskKeys.all, "me", "kpi"] as const,
@@ -44,6 +46,14 @@ export function useTaskComments(id: string | undefined) {
   return useQuery({
     queryKey: taskKeys.comments(id ?? ""),
     queryFn: () => listTaskComments(id as string),
+    enabled: Boolean(id),
+  });
+}
+
+export function useTaskAttachments(id: string | undefined) {
+  return useQuery({
+    queryKey: taskKeys.attachments(id ?? ""),
+    queryFn: () => listTaskAttachments(id as string),
     enabled: Boolean(id),
   });
 }

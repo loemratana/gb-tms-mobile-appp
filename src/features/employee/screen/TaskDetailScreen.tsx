@@ -17,6 +17,8 @@ import { mapTaskResponseToEmployeeTask } from "@/features/employee/data/taskResp
 import type { TaskActivity } from "@/features/employee/types/types";
 import type { WorkUpdatePayload } from "@/features/employee/types/workUpdate";
 import { uploadTaskAttachment } from "@/services/attachments.service";
+import { AttachmentsSection } from "@/features/tasks/components/AttachmentsSection";
+import { ChatSection } from "@/features/tasks/components/ChatSection";
 import {
   TaskReminderSheet,
   type TaskReminderSheetRef,
@@ -26,7 +28,11 @@ import {
   useAddTaskComment,
   useChangeTaskStatus,
 } from "@/features/tasks/hooks/useTaskMutations";
-import { useTask, useTaskComments } from "@/features/tasks/hooks/useTasks";
+import {
+  useTask,
+  useTaskAttachments,
+  useTaskComments,
+} from "@/features/tasks/hooks/useTasks";
 import { useCurrentUser } from "@/features/users/hooks/useUsers";
 
 const ACTION_BAR_CLEARANCE = 92;
@@ -53,7 +59,8 @@ export default function TaskDetailScreen() {
   );
   const changeStatusMutation = useChangeTaskStatus(id ?? "");
   const addCommentMutation = useAddTaskComment(id ?? "");
-  const { data: comments } = useTaskComments(id);
+  const { data: comments, isLoading: isLoadingComments } = useTaskComments(id);
+  const { data: attachments } = useTaskAttachments(id);
 
   // Uploaded attachments reach the backend (see handleSubmitWork), but there's
   // no attachments list query yet, so this timeline note is session-local —
@@ -153,13 +160,20 @@ export default function TaskDetailScreen() {
     [addCommentMutation, changeStatusMutation, id]
   );
 
+  const handleSendComment = useCallback(
+    async (message: string) => {
+      await addCommentMutation.mutateAsync({ content: message });
+    },
+    [addCommentMutation]
+  );
+
   const openReminderSettings = useCallback(() => {
     reminderSheetRef.current?.present();
   }, []);
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-[#F3F4F6]">
+      <View className="flex-1 bg-white">
         <TaskDetailHeader title="Task" status="todo" onBack={() => router.back()} />
         <TaskDetailSkeleton />
       </View>
@@ -168,7 +182,7 @@ export default function TaskDetailScreen() {
 
   if (isError || !task || !taskResponse) {
     return (
-      <View className="flex-1 bg-[#F3F4F6]">
+      <View className="flex-1 bg-white">
         <TaskDetailHeader title="Task" status="todo" onBack={() => router.back()} />
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base font-bold text-[#111827]">
@@ -198,7 +212,7 @@ export default function TaskDetailScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-[#F3F4F6]">
+      <View className="flex-1 bg-white">
         <TaskDetailHeader
           title={task.title}
           status={task.status}
@@ -214,7 +228,7 @@ export default function TaskDetailScreen() {
             paddingBottom: ACTION_BAR_CLEARANCE + Math.max(insets.bottom, 12),
           }}
         >
-          <View className="gap-5 px-4 pt-4">
+          <View className="gap-6 px-4 pt-4">
             <TaskHeroCard task={task} />
             <AssignedPeopleSection
               task={task}
@@ -222,6 +236,18 @@ export default function TaskDetailScreen() {
             />
             <TaskInfoSection task={task} />
             <ActivityTimeline task={task} />
+
+            <View className="border-t border-[#F3F4F6] pt-6">
+              <ChatSection
+                onSend={handleSendComment}
+                comments={comments}
+                isLoadingComments={isLoadingComments}
+              />
+            </View>
+
+            <View className="border-t border-[#F3F4F6] pt-6">
+              <AttachmentsSection attachments={attachments ?? []} />
+            </View>
           </View>
         </ScrollView>
 

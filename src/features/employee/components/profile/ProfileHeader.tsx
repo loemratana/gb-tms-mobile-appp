@@ -8,7 +8,7 @@ type ProfileHeaderProps = {
 
 export function ProfileHeader({ onPressSettings }: ProfileHeaderProps) {
   return (
-    <SafeAreaView edges={["top"]} className="bg-white">
+    <SafeAreaView edges={["top"]}>
       <View className="min-h-[56px] flex-row items-center justify-between px-5 py-2">
         <Text className="text-[17px] font-bold text-[#111827]">Profile</Text>
 

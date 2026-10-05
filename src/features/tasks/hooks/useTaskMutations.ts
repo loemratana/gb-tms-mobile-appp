@@ -111,6 +111,7 @@ export function useAddTaskComment(taskId: string) {
     mutationFn: (input: CreateTaskCommentRequest) => addTaskComment(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) });
+      void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
     },
   });
 }

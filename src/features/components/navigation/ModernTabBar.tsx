@@ -5,18 +5,12 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TabButton } from "@/features/components/navigation/TabButton";
-import {
-  TAB_BAR_HEIGHT,
-  TAB_BAR_RADIUS,
-} from "@/features/components/navigation/constants";
-import type { TabSfIconConfig } from "@/features/components/navigation/tabIcons";
-import { applyShadow, colors, shadows } from "@/styles";
-
-const OUTER_HORIZONTAL_PADDING = 16;
-const HORIZONTAL_PADDING = 12;
+import { TAB_BAR_HEIGHT } from "@/features/components/navigation/constants";
+import type { TabIconConfig } from "@/features/components/navigation/tabIcons";
+import { colors } from "@/styles";
 
 type ModernTabBarProps = BottomTabBarProps & {
-  tabIcons: Record<string, TabSfIconConfig>;
+  tabIcons: Record<string, TabIconConfig>;
 };
 
 export function ModernTabBar({ state, navigation, tabIcons }: ModernTabBarProps) {
@@ -52,51 +46,36 @@ export function ModernTabBar({ state, navigation, tabIcons }: ModernTabBarProps)
 
   const routes = state.routes.filter((route) => tabIcons[route.name]);
 
-  const renderTab = (route: (typeof routes)[number]) => {
-    const routeIndex = state.routes.findIndex((item) => item.key === route.key);
-
-    const isFocused = state.index === routeIndex;
-    const config = tabIcons[route.name];
-
-    return (
-      <View key={route.key} className="flex-1 items-center justify-center">
-        <TabButton
-          config={config}
-          isFocused={isFocused}
-          onPress={() => handleTabPress(route.key, route.name, isFocused)}
-          onLongPress={() => handleTabLongPress(route.key)}
-        />
-      </View>
-    );
-  };
-
   return (
     <View
-      className="bg-transparent"
+      className="flex-row border-t"
       style={{
-        paddingHorizontal: OUTER_HORIZONTAL_PADDING,
-        paddingBottom: Math.max(insets.bottom, 10),
-        paddingTop: 8,
+        height: TAB_BAR_HEIGHT + insets.bottom,
+        paddingBottom: insets.bottom,
+        backgroundColor: colors.card,
+        borderTopColor: colors.border,
       }}
     >
-      <View
-        className="flex-row items-center"
-        style={{
-          height: TAB_BAR_HEIGHT,
-          borderRadius: TAB_BAR_RADIUS,
-          backgroundColor: colors.card,
-          paddingHorizontal: HORIZONTAL_PADDING,
-          ...applyShadow(shadows.xl),
-        }}
-      >
-        {routes.map(renderTab)}
-      </View>
+      {routes.map((route) => {
+        const routeIndex = state.routes.findIndex((item) => item.key === route.key);
+        const isFocused = state.index === routeIndex;
+
+        return (
+          <TabButton
+            key={route.key}
+            config={tabIcons[route.name]}
+            isFocused={isFocused}
+            onPress={() => handleTabPress(route.key, route.name, isFocused)}
+            onLongPress={() => handleTabLongPress(route.key)}
+          />
+        );
+      })}
     </View>
   );
 }
 
-export function useFloatingTabBarInset() {
+export function useTabBarInset(): number {
   const insets = useSafeAreaInsets();
 
-  return insets.bottom + TAB_BAR_HEIGHT + 12;
+  return insets.bottom + TAB_BAR_HEIGHT;
 }

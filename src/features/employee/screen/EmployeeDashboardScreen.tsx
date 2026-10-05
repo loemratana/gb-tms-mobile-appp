@@ -11,6 +11,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { Screen } from "@/features/components/layout/Screen";
 import { TabHeader } from "@/features/components/layout/TabHeader";
+import { EmployeeDashboardSkeleton } from "@/features/employee/components/EmployeeDashboardSkeleton";
 import { TeamPreview } from "@/features/employee/components/TeamPreview";
 import { mapTaskResponseToEmployeeTask } from "@/features/employee/data/taskResponseAdapter";
 import { computeTaskStatCounts, selectActiveTasks } from "@/features/employee/utils/taskStats";
@@ -64,7 +65,7 @@ function KpiTile({ label, value, caption, icon: Icon, tint, onPress }: KpiTilePr
 export default function EmployeeDashboardScreen() {
   const router = useRouter();
   const { data: currentUser } = useCurrentUser();
-  const { data: tasksPage } = useTasks(
+  const { data: tasksPage, isLoading: isLoadingTasks } = useTasks(
     { assigneeId: currentUser?.id, size: 200 },
     Boolean(currentUser?.id),
   );
@@ -112,6 +113,14 @@ export default function EmployeeDashboardScreen() {
       },
     ];
   }, [myTasks]);
+
+  if (isLoadingTasks) {
+    return (
+      <Screen header={<TabHeader variant="profile" />}>
+        <EmployeeDashboardSkeleton />
+      </Screen>
+    );
+  }
 
   return (
     <Screen header={<TabHeader variant="profile" />}>

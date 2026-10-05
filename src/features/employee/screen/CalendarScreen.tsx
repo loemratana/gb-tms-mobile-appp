@@ -15,6 +15,7 @@ import {
   type TaskDetailBottomSheetRef,
 } from "@/features/employee/components/calendar/TaskDetailBottomSheet";
 import { TaskListByDate } from "@/features/employee/components/calendar/TaskListByDate";
+import { TaskListByDateSkeleton } from "@/features/employee/components/calendar/TaskListByDateSkeleton";
 import { useCalendarTasks } from "@/features/employee/hooks/useCalendarTasks";
 import {
   applyCalendarFilters,
@@ -61,7 +62,7 @@ export default function CalendarScreen({
   const today = toDateKey(new Date());
   const [currentMonth, setCurrentMonth] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
-  const { tasks } = useCalendarTasks();
+  const { tasks, isLoading: isLoadingTasks } = useCalendarTasks();
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
   const [category, setCategory] = useState<CategoryFilter>("all");
 
@@ -122,13 +123,17 @@ export default function CalendarScreen({
             onMonthChange={handleMonthChange}
           />
 
-          <TaskListByDate
-            dateLabel={formatSelectedLabel(selectedDate)}
-            tasks={tasksForSelectedDate}
-            category={category}
-            onCategoryChange={setCategory}
-            onTaskPress={(task) => detailSheetRef.current?.present(task)}
-          />
+          {isLoadingTasks ? (
+            <TaskListByDateSkeleton />
+          ) : (
+            <TaskListByDate
+              dateLabel={formatSelectedLabel(selectedDate)}
+              tasks={tasksForSelectedDate}
+              category={category}
+              onCategoryChange={setCategory}
+              onTaskPress={(task) => detailSheetRef.current?.present(task)}
+            />
+          )}
         </ScrollView>
       </View>
 

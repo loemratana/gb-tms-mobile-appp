@@ -75,14 +75,14 @@ export function HeaderProfile({
       />
       <View className="flex-col gap-1">
         <View className="flex-row items-center gap-1">
-          <Text className="text-[14px] font-medium text-[#DBEAFE]">
+          <Text className="text-[14px] font-medium text-[#6B7280]">
             {greeting}
           </Text>
           <Animated.View style={{ transform: [{ rotate }] }}>
             <Hand size={16} color="#38E02F" />
           </Animated.View>
         </View>
-        <Text numberOfLines={1} className="text-[19px] font-bold text-white">
+        <Text numberOfLines={1} className="text-[19px] font-bold text-[#111827]">
           {userName}
         </Text>
       </View>
@@ -120,9 +120,9 @@ export function HeaderNotification({
 }: HeaderNotificationProps) {
   const content = (
     <>
-      <Ionicons name="notifications-outline" size={23} color="#FFFFFF" />
+      <Ionicons name="notifications-outline" size={23} color="#111827" />
       {hasNotification ? (
-        <View className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#2563EB] bg-[#EF4444]" />
+        <View className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#F3F4F6] bg-[#EF4444]" />
       ) : null}
     </>
   );
@@ -131,7 +131,7 @@ export function HeaderNotification({
     return (
       <View
         accessibilityLabel="Notifications"
-        className="relative h-12 w-12 items-center justify-center rounded-full bg-white/20"
+        className="relative h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6]"
       >
         {content}
       </View>
@@ -144,7 +144,7 @@ export function HeaderNotification({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel="Notifications"
-      className="relative h-12 w-12 items-center justify-center rounded-full bg-white/20"
+      className="relative h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6]"
       android_ripple={null}
     >
       {content}
@@ -160,11 +160,11 @@ export function HeaderAnalyzeButton({ onPress }: { onPress: () => void }) {
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel="Analyze"
-      className="mr-2 h-12 flex-row items-center gap-1.5 rounded-full bg-white/20 px-3.5"
+      className="mr-2 h-12 flex-row items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3.5"
       android_ripple={null}
     >
-      <Ionicons name="stats-chart" size={16} color="#FFFFFF" />
-      <Text className="text-[13px] font-semibold text-white">Analyze</Text>
+      <Ionicons name="stats-chart" size={16} color="#2563EB" />
+      <Text className="text-[13px] font-semibold text-[#2563EB]">Analyze</Text>
     </Pressable>
   );
 }
@@ -184,5 +184,5 @@ export function HeaderNotificationButton({
 
 /** Center/left title for non-dashboard tabs. */
 export function HeaderTitle({ title }: { title: string }) {
-  return <Text className="text-[20px] font-bold text-white">{title}</Text>;
+  return <Text className="text-[20px] font-bold text-[#111827]">{title}</Text>;
 }

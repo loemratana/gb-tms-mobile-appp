@@ -9,20 +9,16 @@ export type DateFilterPreset =
   | "this_month"
   | "overdue";
 
-export type TimeFilterPreset = "all" | "morning" | "afternoon" | "evening";
-
 export type TaskListFilters = {
   datePreset: DateFilterPreset;
   dateFrom: string | null;
   dateTo: string | null;
-  timePreset: TimeFilterPreset;
 };
 
 export const EMPTY_TASK_FILTERS: TaskListFilters = {
   datePreset: "all",
   dateFrom: null,
   dateTo: null,
-  timePreset: "all",
 };
 
 export const DATE_PRESETS: { key: DateFilterPreset; label: string }[] = [
@@ -34,23 +30,15 @@ export const DATE_PRESETS: { key: DateFilterPreset; label: string }[] = [
   { key: "overdue", label: "Overdue" },
 ];
 
-export const TIME_PRESETS: { key: TimeFilterPreset; label: string; hint: string }[] = [
-  { key: "all", label: "All Day", hint: "Any time" },
-  { key: "morning", label: "Morning", hint: "Before 12 PM" },
-  { key: "afternoon", label: "Afternoon", hint: "12 – 5 PM" },
-  { key: "evening", label: "Evening", hint: "After 5 PM" },
-];
-
 export function hasActiveTaskFilters(filters: TaskListFilters) {
   return (
     filters.datePreset !== "all" ||
     Boolean(filters.dateFrom) ||
-    Boolean(filters.dateTo) ||
-    filters.timePreset !== "all"
+    Boolean(filters.dateTo)
   );
 }
 
-export type ActiveFilterChipId = "datePreset" | "dateRange" | "timePreset";
+export type ActiveFilterChipId = "datePreset" | "dateRange";
 
 export type ActiveFilterChip = {
   id: ActiveFilterChipId;
@@ -80,14 +68,6 @@ export function getActiveFilterChips(filters: TaskListFilters): ActiveFilterChip
     });
   }
 
-  if (filters.timePreset !== "all") {
-    const preset = TIME_PRESETS.find((item) => item.key === filters.timePreset);
-    chips.push({
-      id: "timePreset",
-      label: preset?.label ?? filters.timePreset,
-    });
-  }
-
   return chips;
 }
 
@@ -100,8 +80,6 @@ export function removeActiveFilterChip(
       return { ...filters, datePreset: "all" };
     case "dateRange":
       return { ...filters, dateFrom: null, dateTo: null };
-    case "timePreset":
-      return { ...filters, timePreset: "all" };
     default:
       return filters;
   }
@@ -138,16 +116,6 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
-function parseTimeMinutes(time?: string): number | null {
-  if (!time) return null;
-  const match = time.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
-
 export function matchesTaskDateFilter(
   task: Pick<Task, "dueDate" | "status">,
   filters: TaskListFilters,
@@ -181,24 +149,6 @@ export function matchesTaskDateFilter(
       );
     case "overdue":
       return isTaskOverdue(task);
-    default:
-      return true;
-  }
-}
-
-export function matchesTaskTimeFilter(task: { time?: string }, filters: TaskListFilters): boolean {
-  if (filters.timePreset === "all") return true;
-
-  const minutes = parseTimeMinutes(task.time);
-  if (minutes === null) return false;
-
-  switch (filters.timePreset) {
-    case "morning":
-      return minutes < 12 * 60;
-    case "afternoon":
-      return minutes >= 12 * 60 && minutes < 17 * 60;
-    case "evening":
-      return minutes >= 17 * 60;
     default:
       return true;
   }

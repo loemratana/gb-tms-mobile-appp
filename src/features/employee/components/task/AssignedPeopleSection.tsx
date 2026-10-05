@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image, Text, View } from "react-native";
 
-import { CARD_SHADOW } from "@/features/employee/components/task/cardStyles";
 import type { Task } from "@/features/employee/types/types";
 
 type AssignedPeopleSectionProps = {
@@ -27,10 +26,7 @@ export function AssignedPeopleSection({
         People
       </Text>
 
-      <View
-        className="flex-row items-center rounded-3xl border border-[#E5E7EB] bg-white px-4 py-4"
-        style={CARD_SHADOW}
-      >
+      <View className="flex-row items-center">
         {/* Manager — left */}
         <View className="min-w-0 flex-1 flex-row items-center">
           {manager?.avatarUrl ? (

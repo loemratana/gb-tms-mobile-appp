@@ -16,7 +16,8 @@
       },
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow TMS to convert your voice into text.",
-        "NSMicrophoneUsageDescription": "Allow TMS to use your microphone for voice-to-text."
+        "NSMicrophoneUsageDescription": "Allow TMS to use your microphone for voice-to-text.",
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -73,13 +74,22 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "setec-40",
+          "project": "react-native",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "apiUrl": "http://localhost:8080/api/v1",
+      "sentryDsn": "https://cef824ded6aff41e20d4678bc0b5f92d@o4512053966209024.ingest.us.sentry.io/4512053996486656",
       "router": {},
       "eas": {
         "projectId": "56109fbb-e37d-4268-9bac-cb2d9e60d9c4"

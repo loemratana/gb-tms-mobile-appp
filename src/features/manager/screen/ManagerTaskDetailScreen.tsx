@@ -10,14 +10,7 @@ import {
   Users,
 } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,13 +20,10 @@ import {
   formatDate,
   getCategoryLabel,
   getPriorityLabel,
-  getSubtaskCompletionProgress,
   resolveTaskSubtasks,
 } from "@/features/employee/helpers/helpers";
 import type { TaskPriority } from "@/features/employee/types/types";
 import { PRIORITY_OPTIONS } from "@/features/manager/components/create-task/taskFormSchema";
-import { AttachmentsSection } from "@/features/manager/components/task-detail/AttachmentsSection";
-import { ChatSection } from "@/features/manager/components/task-detail/ChatSection";
 import {
   ManagerTaskActionsSheet,
   type ManagerTaskActionsSheetRef,
@@ -43,11 +33,11 @@ import { TaskDetailHeader } from "@/features/manager/components/task-detail/Task
 import type { AssigneePickerOption } from "@/features/manager/components/shared/AssigneePicker";
 import { ReassignPickerModal } from "@/features/manager/components/shared/ReassignPickerModal";
 import { AvatarStack } from "@/features/manager/components/task/AvatarStack";
-import { SegmentedProgressBar } from "@/features/manager/components/task/SegmentedProgressBar";
 import { StatusBadge } from "@/features/manager/components/task/StatusBadge";
 import { SubtaskWorkList } from "@/features/manager/components/task/SubtaskWorkList";
-import { getManagerTaskDetailExtras } from "@/features/manager/data/taskDetail";
 import { useTaskReview } from "@/features/manager/hooks/useTaskReview";
+import { AttachmentsSection } from "@/features/tasks/components/AttachmentsSection";
+import { ChatSection } from "@/features/tasks/components/ChatSection";
 import { TaskDetailSkeleton } from "@/features/tasks/components/TaskDetailSkeleton";
 import {
   TaskReminderSheet,
@@ -58,19 +48,14 @@ import {
   useAssignTask,
   useUpdateTask,
 } from "@/features/tasks/hooks/useTaskMutations";
-import { useTask, useTasks } from "@/features/tasks/hooks/useTasks";
+import {
+  useTask,
+  useTaskAttachments,
+  useTaskComments,
+  useTasks,
+} from "@/features/tasks/hooks/useTasks";
 
 // ---------- Constants ----------
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-  },
-  android: { elevation: 1 },
-});
-
 const PRIORITY_COLORS = {
   low: "#32CD32",
   medium: "#F59E0B",
@@ -130,6 +115,8 @@ export default function ManagerTaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data: taskResponse, isLoading, isError, refetch } = useTask(id);
+  const { data: attachments } = useTaskAttachments(id);
+  const { data: comments, isLoading: isLoadingComments } = useTaskComments(id);
   const assignMutation = useAssignTask(id ?? "");
   const updateTaskMutation = useUpdateTask(id ?? "");
   const addCommentMutation = useAddTaskComment(id ?? "");
@@ -178,11 +165,6 @@ export default function ManagerTaskDetailScreen() {
     () => (task ? resolveTaskSubtasks(allTasks, task) : []),
     [allTasks, task],
   );
-  const displayProgress =
-    subtasks.length > 0
-      ? getSubtaskCompletionProgress(subtasks)
-      : (task?.progress ?? 0);
-
   const parentTask = useMemo(
     () =>
       task?.parentId
@@ -294,21 +276,14 @@ export default function ManagerTaskDetailScreen() {
 
   const handleSendComment = useCallback(
     async (message: string) => {
-      try {
-        await addCommentMutation.mutateAsync({ content: message });
-      } catch {
-        Alert.alert(
-          "Couldn't send",
-          "Your comment wasn't sent. Please try again.",
-        );
-      }
+      await addCommentMutation.mutateAsync({ content: message });
     },
     [addCommentMutation],
   );
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-[#F8FAFC]">
+      <View className="flex-1 bg-white">
         <TaskDetailHeader
           title="Task"
           status="todo"
@@ -321,7 +296,7 @@ export default function ManagerTaskDetailScreen() {
 
   if (isError || !task) {
     return (
-      <View className="flex-1 bg-[#F8FAFC]">
+      <View className="flex-1 bg-white">
         <TaskDetailHeader
           title="Task"
           status="todo"
@@ -353,11 +328,9 @@ export default function ManagerTaskDetailScreen() {
     );
   }
 
-  const extras = getManagerTaskDetailExtras(task);
-
   // ---------- Render ----------
   return (
-    <View className="flex-1 bg-[#F8FAFC]">
+    <View className="flex-1 bg-white">
       <TaskDetailHeader
         title={task.title}
         status={task.status}
@@ -377,12 +350,8 @@ export default function ManagerTaskDetailScreen() {
         }}
       >
         {/* Hero Section */}
-        <Animated.View
-          entering={FadeIn.duration(400)}
-          className="bg-white rounded-2xl p-4"
-          style={CARD_SHADOW}
-        >
-          <View className="flex-row items-center gap-2 mb-2">
+        <Animated.View entering={FadeIn.duration(400)}>
+          <View className="mb-3 flex-row items-center gap-2">
             <PriorityBadge priority={task.priority} />
             <StatusBadge status={task.status} />
           </View>
@@ -390,19 +359,16 @@ export default function ManagerTaskDetailScreen() {
             {task.title}
           </Text>
           {task.description && (
-            <Text className="mt-1.5 text-[14px] text-[#6B7280] leading-5">
+            <Text className="mt-2.5 text-[14px] leading-6 text-[#6B7280]">
               {task.description}
             </Text>
           )}
-          <View className="mt-3">
-            <SegmentedProgressBar progress={displayProgress} animated />
-            {subtasks.length > 0 && (
-              <Text className="mt-1 text-[12px] text-[#6B7280]">
-                {subtasks.filter((s) => s.status === "done").length} of{" "}
-                {subtasks.length} subtasks completed
-              </Text>
-            )}
-          </View>
+          {subtasks.length > 0 && (
+            <Text className="mt-4 text-[12px] text-[#6B7280]">
+              {subtasks.filter((s) => s.status === "done").length} of{" "}
+              {subtasks.length} subtasks completed
+            </Text>
+          )}
         </Animated.View>
         {/* Parent Task Link (if subtask) */}
         {parentTask && (
@@ -413,8 +379,7 @@ export default function ManagerTaskDetailScreen() {
                 params: { id: parentTask.id },
               })
             }
-            className="mt-4 flex-row items-center rounded-2xl bg-white px-4 py-3"
-            style={CARD_SHADOW}
+            className="mt-4 flex-row items-center border-t border-[#F3F4F6] py-3"
           >
             <Text className="text-[12px] font-medium text-[#6B7280]">
               Subtask of
@@ -430,7 +395,7 @@ export default function ManagerTaskDetailScreen() {
         )}
 
         {/* Quick Information Grid */}
-        <View className="mt-4 bg-white rounded-2xl p-4" style={CARD_SHADOW}>
+        <View className="mt-6 border-t border-[#F3F4F6] pt-6">
           <Text className="text-[15px] font-semibold text-[#111827] mb-2">
             Quick Information
           </Text>
@@ -483,7 +448,7 @@ export default function ManagerTaskDetailScreen() {
         </View>
 
         {/* Employee / Assignee Section */}
-        <View className="mt-4 bg-white rounded-2xl p-4" style={CARD_SHADOW}>
+        <View className="mt-6 border-t border-[#F3F4F6] pt-6">
           <Text className="text-[15px] font-semibold text-[#111827] mb-2">
             Assignees
           </Text>
@@ -508,7 +473,7 @@ export default function ManagerTaskDetailScreen() {
 
         {/* Subtasks Section */}
         {subtasks.length > 0 && (
-          <View className="mt-4 bg-white rounded-2xl p-4" style={CARD_SHADOW}>
+          <View className="mt-6 border-t border-[#F3F4F6] pt-6">
             <Text className="text-[15px] font-semibold text-[#111827] mb-2">
               Subtasks
             </Text>
@@ -521,13 +486,17 @@ export default function ManagerTaskDetailScreen() {
         )}
 
         {/* Comment */}
-        <View className="mt-4">
-          <ChatSection onSend={(message) => void handleSendComment(message)} />
+        <View className="mt-6 border-t border-[#F3F4F6] pt-6">
+          <ChatSection
+            onSend={handleSendComment}
+            comments={comments}
+            isLoadingComments={isLoadingComments}
+          />
         </View>
 
         {/* Attachments */}
-        <View className="mt-4">
-          <AttachmentsSection attachments={extras.attachments} />
+        <View className="mt-6 border-t border-[#F3F4F6] pt-6">
+          <AttachmentsSection attachments={attachments ?? []} />
         </View>
 
         {/* Extra bottom padding */}
@@ -537,7 +506,7 @@ export default function ManagerTaskDetailScreen() {
       {isReviewPending && (
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white px-4 pt-3"
-          style={[CARD_SHADOW, { paddingBottom: Math.max(insets.bottom, 12) }]}
+          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
           <View className="flex-row gap-2">
             <Pressable

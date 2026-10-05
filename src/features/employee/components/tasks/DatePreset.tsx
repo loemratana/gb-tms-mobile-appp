@@ -11,15 +11,18 @@ type DatePresetProps = {
   onPress: () => void;
 };
 
-/** A quiet pill — tinted text on selection, no border, no fill when idle. */
+/** A bordered chip — filled + primary border when selected, outlined when idle. */
 export function DatePreset({ label, active, onPress }: DatePresetProps) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ checked: active }}
-      className="rounded-full px-3.5 py-2"
-      style={{ backgroundColor: active ? ACTIVE_TINT : "transparent" }}
+      className="rounded-full border px-3.5 py-2"
+      style={{
+        backgroundColor: active ? ACTIVE_TINT : colors.card,
+        borderColor: active ? colors.primary : colors.border,
+      }}
     >
       <Text
         className="text-[13px] font-semibold"

@@ -41,13 +41,12 @@ import type {
 } from "@/features/employee/types/notification";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
+import { colors } from "@/styles";
 
 export type NotificationBottomSheetRef = {
   present: () => void;
   dismiss: () => void;
 };
-
-const SHEET_BG = "#FFFFFF";
 
 function HybridSheetHeader({
   topInset,
@@ -83,21 +82,22 @@ function HybridSheetHeader({
   }));
 
   return (
-    <Animated.View style={containerStyle} className="bg-white">
+    <Animated.View style={[containerStyle, { backgroundColor: colors.card }]}>
       <View className="flex-row items-center justify-between px-4 pb-2">
         <View className="flex-1 flex-row items-center">
           <Animated.View style={backStyle}>
             <Pressable
               onPress={onBack}
-              className="h-9 w-9 items-center justify-center rounded-full bg-white"
+              className="h-9 w-9 items-center justify-center rounded-full"
+              style={{ backgroundColor: colors.card }}
               accessibilityRole="button"
               accessibilityLabel="Go back"
             >
-              <Ionicons name="chevron-back" size={22} color="#111827" />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </Pressable>
           </Animated.View>
 
-          <Text className="text-[18px] font-bold text-[#111827]">
+          <Text className="text-[18px] font-bold" style={{ color: colors.text }}>
             Notifications
           </Text>
         </View>
@@ -107,14 +107,14 @@ function HybridSheetHeader({
           disabled={unreadCount === 0}
           style={{ opacity: unreadCount > 0 ? 1 : 0.35 }}
         >
-          <Text className="text-[13px] font-semibold text-[#32CD32]">
+          <Text className="text-[13px] font-semibold" style={{ color: colors.brand }}>
             Mark all read
           </Text>
         </Pressable>
       </View>
 
       <Animated.View style={compactTitleStyle} className="overflow-hidden px-4">
-        <Text className="text-[13px] text-[#6B7280]">
+        <Text className="text-[13px]" style={{ color: colors.textMuted }}>
           {unreadCount > 0
             ? `${unreadCount} unread updates`
             : "You're all caught up"}
@@ -127,8 +127,15 @@ function HybridSheetHeader({
 function EmptyState() {
   return (
     <View className="items-center py-20">
-      <Ionicons name="notifications-off-outline" size={32} color="#9CA3AF" />
-      <Text className="mt-3 text-[15px] font-semibold text-[#111827]">
+      <Ionicons
+        name="notifications-off-outline"
+        size={32}
+        color={colors.textSubtle}
+      />
+      <Text
+        className="mt-3 text-[15px] font-semibold"
+        style={{ color: colors.text }}
+      >
         No notifications
       </Text>
     </View>
@@ -235,7 +242,7 @@ export const NotificationBottomSheet = forwardRef<NotificationBottomSheetRef>(
         backgroundComponent={ExpandableSheetBackground}
         handleComponent={ExpandableSheetHandle}
       >
-        <View className="flex-1" style={{ backgroundColor: SHEET_BG }}>
+        <View className="flex-1" style={{ backgroundColor: colors.card }}>
           <HybridSheetHeader
             topInset={insets.top}
             unreadCount={unreadCount}

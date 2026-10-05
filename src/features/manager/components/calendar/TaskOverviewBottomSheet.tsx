@@ -73,6 +73,7 @@ export const TaskOverviewBottomSheet = forwardRef<
         <BottomSheetScrollView
           contentContainerStyle={{
             paddingHorizontal: 20,
+            paddingTop: 4,
             paddingBottom: Math.max(insets.bottom, 16) + 16,
           }}
         >

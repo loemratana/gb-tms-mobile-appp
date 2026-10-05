@@ -28,10 +28,7 @@ export function TabHeader(props: TabHeaderProps) {
   const { userName, avatarUrl, role } = useHeaderUser();
 
   return (
-    <SafeAreaView
-      edges={["top"]}
-      className="border-b border-[#1D4ED8] bg-[#2563EB]"
-    >
+    <SafeAreaView edges={["top"]}>
       <View className="min-h-[68px] flex-row items-center justify-between px-4 py-3">
         {props.variant === "profile" ? (
           <HeaderProfile
@@ -40,7 +37,7 @@ export function TabHeader(props: TabHeaderProps) {
             role={role}
           />
         ) : (
-          <Text className="text-[20px] font-bold text-white">
+          <Text className="text-[20px] font-bold text-[#111827]">
             {props.title}
           </Text>
         )}

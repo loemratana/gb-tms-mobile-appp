@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Text, View } from "react-native";
 
-import { CARD_SHADOW } from "@/features/employee/components/task/cardStyles";
 import type { Task, TaskActivity } from "@/features/employee/types/types";
 
 type ActivityTimelineProps = {
@@ -28,10 +27,7 @@ export function ActivityTimeline({ task }: ActivityTimelineProps) {
         Activity
       </Text>
 
-      <View
-        className="rounded-3xl border border-[#E5E7EB] bg-white px-4 py-2"
-        style={CARD_SHADOW}
-      >
+      <View>
         {items.length === 0 ? (
           <Text className="py-4 text-center text-[13px] text-[#9CA3AF]">
             No activity yet

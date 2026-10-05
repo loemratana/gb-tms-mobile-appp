@@ -18,14 +18,7 @@ export function TeamMemberCard({
     <Pressable
       onPress={() => onPress?.(member)}
       accessibilityRole="button"
-      className="mb-3 rounded-2xl border border-[#E5E7EB] bg-white p-4"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
+      className="border-b border-[#F3F4F6] py-4"
     >
       <View className="flex-row items-center">
         <View className="relative mr-3">

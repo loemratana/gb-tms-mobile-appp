@@ -2,11 +2,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useRef } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
-import { getStatusColor } from "@/features/employee/helpers/helpers";
 import { useProjectMembers } from "@/features/manager/hooks/useProjectMembers";
 import { useProjectTaskList } from "@/features/manager/hooks/useProjectTaskList";
 import { ProjectTaskCreateSheet } from "@/features/manager/components/project/ProjectTaskCreateSheet";
 import type { ProjectTaskCreateSheetRef } from "@/features/manager/components/project/ProjectTaskCreateSheet";
+import { ProjectTaskListSkeleton } from "@/features/manager/components/project/ProjectTaskRowSkeleton";
+import { ProjectTaskRow } from "@/features/manager/components/project/ProjectTaskRow";
 import { getProjectStatusStyle } from "@/features/manager/utils/projectStatus";
 import { buildProjectTaskCreateInput } from "@/features/manager/utils/projectTaskDefaults";
 import {
@@ -30,13 +31,16 @@ export default function ManagerProjectDetailScreen() {
   const {
     filteredTasks,
     progress,
+    loading,
+    error,
     search,
     setSearch,
     filter,
     setFilter,
     sort,
     setSort,
-    createTask,
+    addTask,
+    clearError,
   } = useProjectTaskList(project?.name);
 
   const { members, assigneeMap } = useProjectMembers(project);
@@ -144,7 +148,20 @@ export default function ManagerProjectDetailScreen() {
               </View>
             </ScrollView>
 
-            {filteredTasks.length === 0 ? (
+            {error ? (
+              <View className="mt-4 flex-row items-center justify-between rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3">
+                <Text className="flex-1 text-[13px] text-[#B91C1C]">{error}</Text>
+                <Pressable onPress={clearError} className="ml-2 rounded-full bg-white px-3 py-1.5">
+                  <Text className="text-[12px] font-semibold text-[#B91C1C]">Dismiss</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {loading && filteredTasks.length === 0 ? (
+              <View className="mt-4">
+                <ProjectTaskListSkeleton />
+              </View>
+            ) : filteredTasks.length === 0 ? (
               <View className="mt-4 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-8">
                 <Text className="text-center text-[14px] font-medium text-[#374151]">No tasks found</Text>
                 <Text className="mt-1 text-center text-[12px] text-[#9CA3AF]">
@@ -154,22 +171,7 @@ export default function ManagerProjectDetailScreen() {
             ) : (
               <View className="mt-4 gap-2">
                 {filteredTasks.map((task) => (
-                  <View
-                    key={task.id}
-                    className="flex-row items-start rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-3"
-                  >
-                    <View
-                      className="mt-1 h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: getStatusColor(task.status) }}
-                    />
-                    <View className="ml-3 flex-1">
-                      <Text className="text-[14px] font-semibold text-[#111827]">{task.title}</Text>
-                      <Text className="mt-1 text-[12px] text-[#6B7280]">
-                        {task.assignees[0]?.name ?? "Unassigned"}
-                        {task.dueDate ? ` • Due ${task.dueDate}` : ""}
-                      </Text>
-                    </View>
-                  </View>
+                  <ProjectTaskRow key={task.id} task={task} />
                 ))}
               </View>
             )}
@@ -180,7 +182,7 @@ export default function ManagerProjectDetailScreen() {
       <ProjectTaskCreateSheet
         ref={createSheetRef}
         onCreate={(values) =>
-          createTask(
+          void addTask(
             buildProjectTaskCreateInput(project, values, assigneeMap.get(values.assigneeId) ?? "Unassigned"),
           )
         }

@@ -1,16 +1,17 @@
 import { Send } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-  },
-  android: { elevation: 2 },
-});
+import { CommentList } from "@/features/tasks/components/CommentList";
+import type { TaskCommentResponse } from "@/features/tasks/types/task.types";
 
 const QUICK_REPLIES = [
   "Please share a quick update",
@@ -21,36 +22,58 @@ const QUICK_REPLIES = [
 ];
 
 type ChatSectionProps = {
-  onSend?: (message: string) => void;
+  onSend?: (message: string) => Promise<void>;
+  comments?: TaskCommentResponse[];
+  isLoadingComments?: boolean;
 };
 
-export function ChatSection({ onSend }: ChatSectionProps) {
+export function ChatSection({
+  onSend,
+  comments = [],
+  isLoadingComments = false,
+}: ChatSectionProps) {
   const [draft, setDraft] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const handleSelect = (id: string, text: string) => {
     setSelectedId(id);
     setDraft(text);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || sending) return;
 
-    onSend?.(text);
-    Alert.alert("Comment sent", "Your message was sent to the assignee.");
-    setDraft("");
-    setSelectedId(null);
+    setSending(true);
+    try {
+      await onSend?.(text);
+      Alert.alert("Comment sent", "Your message was sent to the assignee.");
+      setDraft("");
+      setSelectedId(null);
+    } catch {
+      Alert.alert(
+        "Couldn't send",
+        "Your message wasn't sent. Please try again."
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <View>
       <Text className="mb-3 text-[15px] font-semibold text-[#111827]">Comment</Text>
 
-      <View
-        className="rounded-3xl border border-[#F3F4F6] bg-white p-4"
-        style={CARD_SHADOW}
-      >
+      {isLoadingComments ? (
+        <View className="mb-4 items-center py-3">
+          <ActivityIndicator size="small" color="#9CA3AF" />
+        </View>
+      ) : (
+        <CommentList comments={comments} />
+      )}
+
+      <View>
         <Text className="mb-2.5 text-[12px] font-medium text-[#6B7280]">
           Quick replies
         </Text>
@@ -99,18 +122,23 @@ export function ChatSection({ onSend }: ChatSectionProps) {
             placeholderTextColor="#9CA3AF"
             className="min-w-0 flex-1 text-[14px] text-[#111827]"
             multiline
+            editable={!sending}
             style={{ maxHeight: 96 }}
           />
           <Pressable
-            onPress={handleSend}
-            disabled={!draft.trim()}
+            onPress={() => void handleSend()}
+            disabled={!draft.trim() || sending}
             accessibilityRole="button"
             accessibilityLabel="Send comment"
             className={`h-9 w-9 items-center justify-center rounded-full ${
-              draft.trim() ? "bg-[#32CD32]" : "bg-[#D1D5DB]"
+              draft.trim() && !sending ? "bg-[#32CD32]" : "bg-[#D1D5DB]"
             }`}
           >
-            <Send size={16} color="#FFFFFF" strokeWidth={2.2} />
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Send size={16} color="#FFFFFF" strokeWidth={2.2} />
+            )}
           </Pressable>
         </View>
       </View>
