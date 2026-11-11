@@ -4,11 +4,12 @@ import type {
   AssignTaskRequest,
   CreateTaskCommentRequest,
   CreateTaskRequest,
-  KpiSummaryResponse,
   ManagerAssignedKpiResponse,
   PageResponse,
   TaskAssignmentResponse,
   TaskCommentResponse,
+  TaskCountsResponse,
+  TaskMonthlyCountsResponse,
   TaskReminderSettingsResponse,
   TaskResponse,
   TaskSearchParams,
@@ -16,6 +17,30 @@ import type {
   UpdateTaskReminderSettingsRequest,
   UpdateTaskRequest,
 } from "@/features/tasks/types/task.types";
+
+/** Pagination/sort don't apply; `taskStatus` and `overdue` are ignored (they're the breakdown). */
+export async function getTaskCounts(
+  params: Omit<TaskSearchParams, "page" | "size" | "sort"> = {}
+): Promise<TaskCountsResponse> {
+  const { data } = await api.get<ApiEnvelope<TaskCountsResponse>>("/tasks/counts", { params });
+  return data.data;
+}
+
+/** Top-level, non-cancelled tasks per due month of `year`; same visibility and filters as `GET /tasks`. */
+export async function getTaskMonthlyCounts(
+  year: number,
+  params: Omit<TaskSearchParams, "page" | "size" | "sort" | "taskStatus" | "overdue" | "topLevelOnly"> = {}
+): Promise<TaskMonthlyCountsResponse> {
+  const { data } = await api.get<ApiEnvelope<TaskMonthlyCountsResponse>>("/tasks/counts/by-due-month", {
+    params: { ...params, year },
+  });
+  return data.data;
+}
+
+/** Soft delete (archive): the task and its subtasks disappear from lists and dashboards. */
+export async function deleteTask(id: string): Promise<void> {
+  await api.delete(`/tasks/${id}`);
+}
 
 export async function createTask(input: CreateTaskRequest): Promise<TaskResponse> {
   const { data } = await api.post<ApiEnvelope<TaskResponse>>("/tasks", input);
@@ -117,14 +142,13 @@ export async function listTaskComments(
   return data.data;
 }
 
-export async function getMyKpiSummary(): Promise<KpiSummaryResponse> {
-  const { data } = await api.get<ApiEnvelope<KpiSummaryResponse>>("/tasks/me/kpi");
-  return data.data;
-}
-
 export async function getManagerAssignedKpi(): Promise<ManagerAssignedKpiResponse> {
   const { data } = await api.get<ApiEnvelope<ManagerAssignedKpiResponse>>(
     "/tasks/me/assigned-kpi"
   );
+  // The server omits `data` when it's null; React Query rejects undefined, so surface it as an error state.
+  if (data?.data == null) {
+    throw new Error("Assigned-task KPIs are unavailable right now.");
+  }
   return data.data;
 }

@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router/js-tabs";
 
-import { ModernTabBar } from "@/features/components/navigation/ModernTabBar";
-import { EMPLOYEE_TAB_ICONS } from "@/features/components/navigation/tabIcons";
+import { ModernTabBar } from "@/components/navigation/ModernTabBar";
+import { EMPLOYEE_TAB_ICONS } from "@/components/navigation/tabIcons";
 
 export default function EmployeeTabsLayout() {
   return (
@@ -11,7 +11,7 @@ export default function EmployeeTabsLayout() {
     >
       <Tabs.Screen name="dashboard" />
       <Tabs.Screen name="my-tasks" />
-      <Tabs.Screen name="team" />
+      <Tabs.Screen name="meetings" />
       <Tabs.Screen name="calendar" />
       <Tabs.Screen name="profile" />
     </Tabs>

@@ -15,9 +15,12 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Allow TMS to convert your voice into text.",
-        "NSMicrophoneUsageDescription": "Allow TMS to use your microphone for voice-to-text.",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
       }
     },
     "android": {
@@ -29,9 +32,6 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -42,6 +42,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera to scan meeting check-in QR codes.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
@@ -49,18 +56,19 @@
           "imageWidth": 76
         }
       ],
-      [
-        "expo-speech-recognition",
-        {
-          "microphonePermission": "Allow TMS to use your microphone for voice-to-text.",
-          "speechRecognitionPermission": "Allow TMS to convert your voice into text."
-        }
-      ],
       "@react-native-community/datetimepicker",
-      "expo-speech-recognition",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#2563EB",
+          "sounds": [
+            "./assets/sounds/alarm.wav"
+          ]
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -69,7 +77,6 @@
           }
         }
       ],
-      "expo-audio",
       "expo-asset",
       "expo-font",
       "expo-image",
@@ -82,13 +89,13 @@
           "project": "react-native",
           "url": "https://sentry.io/"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://localhost:8080/api/v1",
       "sentryDsn": "https://cef824ded6aff41e20d4678bc0b5f92d@o4512053966209024.ingest.us.sentry.io/4512053996486656",
       "router": {},
       "eas": {

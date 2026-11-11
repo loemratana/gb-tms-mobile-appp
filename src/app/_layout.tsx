@@ -1,5 +1,5 @@
 import "@/config/sentry.config";
-import "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../../global.css";
 import "@/lib/nativewind-interop";
 
@@ -7,18 +7,20 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, type ReactNode } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { queryClient } from "@/config/query.config";
-import { TaskProvider } from "@/contexts/TaskContext";
+import { useRouteGuards } from "@/features/auth/hooks/useRouteGuards";
 import {
   consumeInitialNotification,
   startPushListeners,
 } from "@/lib/pushNotifications";
 import { useAuthStore } from "@/stores/authStore";
+import { colors, themeVars } from "@/styles";
 
 function AuthBootstrap({ children }: { children: ReactNode }) {
   const isHydrated = useAuthStore((s) => s.isHydrated);
@@ -46,10 +48,10 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#F3F4F6",
+          backgroundColor: colors.mutedBg,
         }}
       >
-        <ActivityIndicator size="large" color="#32CD32" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
@@ -57,21 +59,45 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
   return children;
 }
 
+/**
+ * Route groups are gated here, so deep links and notification taps can't open
+ * a screen the session isn't allowed to see. When a guard flips (sign-in,
+ * sign-out, 401), Expo Router redirects to `index`, which picks the right home.
+ */
+function GuardedStack() {
+  const { isSignedIn, canAccessEmployeeArea, canAccessManagerArea } = useRouteGuards();
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      <Stack.Screen name="index" />
+      <Stack.Protected guard={!isSignedIn}>
+        <Stack.Screen name="auth" />
+      </Stack.Protected>
+      <Stack.Protected guard={canAccessEmployeeArea}>
+        <Stack.Screen name="(employee)" />
+      </Stack.Protected>
+      <Stack.Protected guard={canAccessManagerArea}>
+        <Stack.Screen name="(manager)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
 function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <BottomSheetModalProvider>
-            <AuthBootstrap>
-              {/* TaskProvider wraps the whole navigator, so any screen mounted
-                  below — today just the manager project detail screen — can
-                  call useTaskContext() and read/update the same task state. */}
-              <TaskProvider>
-                <Stack screenOptions={{ headerShown: false }} />
-              </TaskProvider>
-            </AuthBootstrap>
-          </BottomSheetModalProvider>
+          {/* Colour-class variables for the light/dark token set; wraps the sheet provider so
+              bottom sheets (rendered in its portal) resolve them too. */}
+          <View className="flex-1" style={themeVars}>
+            <StatusBar style="auto" />
+            <BottomSheetModalProvider>
+              <AuthBootstrap>
+                <GuardedStack />
+              </AuthBootstrap>
+            </BottomSheetModalProvider>
+          </View>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </QueryClientProvider>

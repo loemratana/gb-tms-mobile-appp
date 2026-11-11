@@ -2,7 +2,7 @@ import { api, type ApiEnvelope } from "@/lib/api";
 import type {
   Notification,
   NotificationType as UiType,
-} from "@/features/employee/types/notification";
+} from "@/features/notifications/types/notification.types";
 
 export type NotificationResponse = {
   id: string;
@@ -49,6 +49,9 @@ const BACKEND_TO_UI_TYPE: Record<string, UiType> = {
   TASK_REMINDER: "TASK_REMINDER",
   APPROVAL_APPROVED: "TASK_APPROVED",
   APPROVAL_REJECTED: "TASK_REJECTED",
+  MEETING_INVITED: "MEETING",
+  MEETING_UPDATED: "MEETING",
+  MEETING_CANCELLED: "MEETING",
 };
 
 function toUiNotification(dto: NotificationResponse): Notification {
@@ -57,6 +60,7 @@ function toUiNotification(dto: NotificationResponse): Notification {
     type: BACKEND_TO_UI_TYPE[dto.type] ?? "STATUS_UPDATE",
     title: dto.title,
     taskId: dto.referenceType === "TASK" ? (dto.referenceId ?? "") : "",
+    meetingId: dto.referenceType === "MEETING_BOOKING" ? (dto.referenceId ?? undefined) : undefined,
     taskName: dto.message, // backend already composes the full sentence
     sender: dto.senderName ?? "System",
     senderAvatarUrl: dto.senderAvatarUrl ?? undefined,
@@ -88,4 +92,16 @@ export async function fetchUnreadCount(): Promise<number> {
 
 export async function markNotificationAsRead(id: string): Promise<void> {
   await api.patch(`/notifications/${id}/read`);
+}
+
+export async function markNotificationAsUnread(id: string): Promise<void> {
+  await api.patch(`/notifications/${id}/unread`);
+}
+
+export async function markAllNotificationsAsRead(): Promise<void> {
+  await api.patch("/notifications/read-all");
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  await api.delete(`/notifications/${id}`);
 }

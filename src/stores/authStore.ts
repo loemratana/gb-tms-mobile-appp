@@ -1,24 +1,34 @@
 import { create } from "zustand";
 
 import { queryClient } from "@/config/query.config";
-import type { AuthUser, LoginCredentials } from "@/features/auth/types/auth";
-import { syncProfileFromAuthUser } from "@/features/auth/helpers/syncProfile";
-import { defaultProfileUser } from "@/features/employee/data/profile";
+import type { AuthUser, LoginCredentials } from "@/features/auth/types/auth.types";
+import { syncProfileFromAuthUser } from "@/features/auth/utils/syncProfile";
+import { getApiErrorMessage } from "@/lib/api";
+import { defaultProfileUser } from "@/features/profile/utils/profile";
 import {
   registerForPushNotifications,
   unregisterPushNotifications,
 } from "@/lib/pushNotifications";
-import { login as loginApi, logout as logoutApi } from "@/services/auth.service";
-import { useNotificationStore } from "@/stores/notificationStore";
-import { useProfileStore } from "@/stores/profileStore";
+import {
+  changePassword as changePasswordApi,
+  login as loginApi,
+  logout as logoutApi,
+  logoutAll as logoutAllApi,
+  toAuthUser,
+  type ChangePasswordInput,
+  type UserProfile,
+} from "@/services/auth.service";
+import { useNotificationStore } from "./notificationStore";
+import { useProfileStore } from "./profileStore";
 import {
   clearAuthStorage,
   getAuthToken,
   getAuthUser,
+  getRefreshToken,
   setAuthToken,
   setAuthUser,
   setRefreshToken,
-} from "@/utils/storage";
+} from "@/lib/storage";
 
 type AuthState = {
   token: string | null;
@@ -27,32 +37,43 @@ type AuthState = {
   isSigningIn: boolean;
   hydrate: () => Promise<void>;
   signIn: (credentials: LoginCredentials) => Promise<AuthUser>;
-  signOut: () => Promise<void>;
+  /**
+   * `allDevices` also ends this account's sessions on every other device.
+   * `sessionExpired` skips all server calls (the session is already dead) and only cleans up locally.
+   */
+  signOut: (options?: { allDevices?: boolean; sessionExpired?: boolean }) => Promise<void>;
+  /** Other devices are signed out; this one keeps going on the new tokens. Throws the API error. */
+  changePassword: (input: ChangePasswordInput) => Promise<void>;
+  /**
+   * Applies a fresh GET /users/me to the session, so a role/name/avatar change made by an admin
+   * takes effect without signing out (the route guards follow `user.role`).
+   */
+  syncFromProfile: (profile: UserProfile) => void;
 };
 
-function getErrorMessage(error: unknown): string {
-  if (
-    error &&
-    typeof error === "object" &&
-    "response" in error &&
-    error.response &&
-    typeof error.response === "object" &&
-    "data" in error.response
-  ) {
-    const data = error.response.data as { message?: string };
-    if (data.message) return data.message;
-  }
-
-  if (error instanceof Error) return error.message;
-
-  return "Something went wrong. Please try again.";
+function sameAuthUser(a: AuthUser, b: AuthUser): boolean {
+  return a.id === b.id && a.role === b.role && a.name === b.name
+    && a.email === b.email && a.avatarUrl === b.avatarUrl;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   isHydrated: false,
   isSigningIn: false,
+
+  syncFromProfile: (profile) => {
+    const current = get().user;
+    // Ignore responses that arrive after sign-out or belong to a previous account.
+    if (!current || current.id !== profile.id) return;
+
+    const next = toAuthUser(profile);
+    if (sameAuthUser(current, next)) return;
+
+    set({ user: next });
+    syncProfileFromAuthUser(next);
+    void setAuthUser(next);
+  },
 
   hydrate: async () => {
     try {
@@ -90,19 +111,33 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       return user;
     } catch (error) {
-      throw new Error(getErrorMessage(error));
+      throw new Error(getApiErrorMessage(error, "Unable to sign in."));
     } finally {
       set({ isSigningIn: false });
     }
   },
 
-  signOut: async () => {
+  changePassword: async (input) => {
+    const { accessToken, refreshToken } = await changePasswordApi(input);
+    // The old refresh token was revoked server-side, so the new pair must replace it.
+    await Promise.all([setAuthToken(accessToken), setRefreshToken(refreshToken)]);
+    set({ token: accessToken });
+  },
+
+  signOut: async (options) => {
+    const sessionExpired = options?.sessionExpired === true;
     try {
-      await logoutApi();
+      if (!sessionExpired) {
+        // Push unregister needs a valid session, so it runs before logout revokes it.
+        await unregisterPushNotifications();
+        await (options?.allDevices ? logoutAllApi() : logoutApi(await getRefreshToken()));
+      }
     } catch {
       // Local sign-out still succeeds even if the server call fails.
     } finally {
-      await unregisterPushNotifications();
+      if (sessionExpired) {
+        await unregisterPushNotifications({ localOnly: true });
+      }
       await clearAuthStorage();
       set({ token: null, user: null });
       useNotificationStore.getState().reset();

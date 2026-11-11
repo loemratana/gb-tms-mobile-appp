@@ -1,15 +1,16 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import { listTaskAttachments } from "@/services/attachments.service";
 import {
   getManagerAssignedKpi,
-  getMyKpiSummary,
   getTaskById,
+  getTaskCounts,
+  getTaskMonthlyCounts,
   getTaskReminderSettings,
   listTaskComments,
   searchTasks,
 } from "@/services/tasks.service";
-import type { TaskSearchParams } from "@/features/tasks/types/task.types";
+import type { PageResponse, TaskResponse, TaskSearchParams } from "@/features/tasks/types/task.types";
 
 export const taskKeys = {
   all: ["tasks"] as const,
@@ -19,11 +20,41 @@ export const taskKeys = {
   detail: (id: string) => [...taskKeys.details(), id] as const,
   comments: (id: string) => [...taskKeys.detail(id), "comments"] as const,
   attachments: (id: string) => [...taskKeys.detail(id), "attachments"] as const,
+  submissions: (id: string) => [...taskKeys.detail(id), "submissions"] as const,
   reminderSettings: (id: string) =>
     [...taskKeys.detail(id), "reminder-settings"] as const,
-  myKpi: () => [...taskKeys.all, "me", "kpi"] as const,
-  managerAssignedKpi: () => [...taskKeys.all, "me", "assigned-kpi"] as const,
+  /** Aggregates (dashboards). Grouped so one invalidation refreshes them all. */
+  summaries: () => [...taskKeys.all, "summary"] as const,
+  counts: (params: TaskSearchParams) => [...taskKeys.summaries(), "counts", params] as const,
+  monthlyCounts: (year: number, params: TaskSearchParams) =>
+    [...taskKeys.summaries(), "monthly-counts", year, params] as const,
+  managerAssignedKpi: () => [...taskKeys.summaries(), "assigned-kpi"] as const,
 };
+
+/** A task was created/changed/deleted: refresh every list and every dashboard number. */
+export function invalidateTaskListsAndSummaries(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+  void queryClient.invalidateQueries({ queryKey: taskKeys.summaries() });
+}
+
+/** Exact server-side task counts — use instead of counting a fetched page, which caps out. */
+export function useTaskCounts(params: TaskSearchParams, enabled = true) {
+  return useQuery({
+    queryKey: taskKeys.counts(params),
+    queryFn: () => getTaskCounts(params),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+export function useTaskMonthlyCounts(year: number, params: TaskSearchParams, enabled = true) {
+  return useQuery({
+    queryKey: taskKeys.monthlyCounts(year, params),
+    queryFn: () => getTaskMonthlyCounts(year, params),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
 
 export function useTasks(params: TaskSearchParams = {}, enabled = true) {
   return useQuery({
@@ -34,11 +65,25 @@ export function useTasks(params: TaskSearchParams = {}, enabled = true) {
   });
 }
 
+/** The task as it appears in any already-loaded task list, if there is one. */
+function findTaskInCachedLists(queryClient: QueryClient, id: string): TaskResponse | undefined {
+  const pages = queryClient.getQueriesData<PageResponse<TaskResponse>>({ queryKey: taskKeys.lists() });
+  for (const [, page] of pages) {
+    const match = page?.content.find((task) => task.id === id);
+    if (match) return match;
+  }
+  return undefined;
+}
+
 export function useTask(id: string | undefined) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: taskKeys.detail(id ?? ""),
     queryFn: () => getTaskById(id as string),
     enabled: Boolean(id),
+    // Opening a task from a list: show the list's copy at once instead of a
+    // skeleton, while the full task loads in the background.
+    placeholderData: () => (id ? findTaskInCachedLists(queryClient, id) : undefined),
   });
 }
 
@@ -63,14 +108,6 @@ export function useTaskReminderSettings(id: string | undefined) {
     queryKey: taskKeys.reminderSettings(id ?? ""),
     queryFn: () => getTaskReminderSettings(id as string),
     enabled: Boolean(id),
-  });
-}
-
-export function useMyKpi() {
-  return useQuery({
-    queryKey: taskKeys.myKpi(),
-    queryFn: getMyKpiSummary,
-    staleTime: 60_000,
   });
 }
 

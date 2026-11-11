@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 
-import { getDashboardPathForRole } from "@/features/auth/helpers/navigation";
+import { getDashboardPathForRole } from "@/features/auth/utils/navigation";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function Index() {

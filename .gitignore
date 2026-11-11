@@ -10,6 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Native
+/.cxx/
 .kotlin/
 *.orig.*
 *.jks
@@ -49,3 +50,10 @@ example
 # generated native folders
 /ios
 /android
+
+# IDE settings
+.idea/
+
+# Local native module build output
+modules/*/android/build/
+modules/*/android/.cxx/

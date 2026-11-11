@@ -1,1 +1,1 @@
-export { default } from "@/features/manager/screen/ManagerDashboardScreen";
+export { default } from "@/features/dashboard/screens/ManagerDashboardScreen";

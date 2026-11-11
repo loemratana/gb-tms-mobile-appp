@@ -7,6 +7,8 @@ import type {
   EmployeeHierarchy,
   UserCreateRequest,
   UserManagerInfo,
+  UserPerformanceParams,
+  UserPerformanceResponse,
   UserResponse,
   UserSearchParams,
   UserUpdateRequest,
@@ -52,11 +54,14 @@ export async function reactivateUser(id: string): Promise<void> {
   await api.patch(`/users/${id}/activate`);
 }
 
+/** PUT /users/{id}/roles replaces the user's whole role set, so the user ends up with exactly this role. */
 export async function assignUserRole(
   id: string,
   input: AssignRoleRequest
 ): Promise<UserResponse> {
-  const { data } = await api.put<ApiEnvelope<UserResponse>>(`/users/${id}/role`, input);
+  const { data } = await api.put<ApiEnvelope<UserResponse>>(`/users/${id}/roles`, {
+    roleIds: [input.roleId],
+  });
   return data.data;
 }
 
@@ -104,5 +109,15 @@ export async function uploadUserAvatar(
     formData,
     { headers: { "Content-Type": "multipart/form-data" } }
   );
+  return data.data;
+}
+
+export async function getUserPerformance(
+  id: string,
+  params: UserPerformanceParams = {}
+): Promise<UserPerformanceResponse> {
+  const { data } = await api.get<ApiEnvelope<UserPerformanceResponse>>(`/users/${id}/performance`, {
+    params,
+  });
   return data.data;
 }

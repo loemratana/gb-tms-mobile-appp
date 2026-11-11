@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 
-import { NotificationSheetProvider } from "@/features/employee/components/notifications/NotificationSheetProvider";
-import { CreateTaskSheetProvider } from "@/features/manager/components/create-task/CreateTaskSheetProvider";
+import { NotificationSheetProvider } from "@/features/notifications/components/NotificationSheetProvider";
+import { CreateTaskSheetProvider } from "@/features/tasks/components/create/CreateTaskSheetProvider";
 
 export default function ManagerLayout() {
   return (
@@ -17,7 +17,49 @@ export default function ManagerLayout() {
             }}
           />
           <Stack.Screen
-            name="projects/[id]"
+            name="team/index"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="rooms/index"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="rooms/[id]"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="meetings/new"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="meetings/scan"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="meetings/check-in-code"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="meetings/[id]"
             options={{
               animation: "slide_from_right",
               presentation: "card",
@@ -25,6 +67,27 @@ export default function ManagerLayout() {
           />
           <Stack.Screen
             name="team/[id]"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="reviews"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="settings"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="submissions"
             options={{
               animation: "slide_from_right",
               presentation: "card",

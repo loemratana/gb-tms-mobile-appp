@@ -1,6 +1,6 @@
 import { Platform, type ViewStyle } from "react-native";
 
-import { palette } from "@/styles/colors";
+import { palette } from "./colors";
 
 type ShadowPreset = {
   ios: ViewStyle;
@@ -34,7 +34,7 @@ export const shadows = {
 
 export const brandShadow = {
   ios: {
-    shadowColor: palette.green.brand,
+    shadowColor: palette.blue[600],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

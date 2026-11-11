@@ -1,1 +1,1 @@
-export { default } from "@/features/employee/screen/TeamMemberDetailScreen";
+export { default } from "@/features/team/screens/TeamMemberDetailScreen";

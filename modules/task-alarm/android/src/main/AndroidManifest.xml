@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- Shows the alarm screen over the lock screen. Android 14+ lets the user revoke this. -->
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+  <application>
+    <!-- Plays the looping alarm sound + vibration and owns the ongoing alarm notification. -->
+    <service
+      android:name="expo.modules.taskalarm.AlarmService"
+      android:exported="false"
+      android:foregroundServiceType="mediaPlayback" />
+
+    <!-- Full-screen alarm UI shown over the lock screen. -->
+    <activity
+      android:name="expo.modules.taskalarm.AlarmActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:taskAffinity="expo.modules.taskalarm.alarm"
+      android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+  </application>
+</manifest>

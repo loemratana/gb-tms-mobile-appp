@@ -4,10 +4,16 @@ import type {
   DepartmentMemberResponse,
   DepartmentRequest,
   DepartmentResponse,
+  DepartmentTreeNode,
 } from "@/features/departments/types/department.types";
 
 export async function listDepartments(): Promise<DepartmentResponse[]> {
   const { data } = await api.get<ApiEnvelope<DepartmentResponse[]>>("/departments");
+  return data.data;
+}
+
+export async function getDepartmentTree(): Promise<DepartmentTreeNode[]> {
+  const { data } = await api.get<ApiEnvelope<DepartmentTreeNode[]>>("/departments/tree");
   return data.data;
 }
 

@@ -1,13 +1,15 @@
+
 import {
   colors,
-  darkColors,
   palette,
   priorityColors,
   roleAccentColors,
   taskStatusColors,
-} from "@/styles/colors";
-import { componentRadius, radius } from "@/styles/radius";
-import { shadows } from "@/styles/shadows";
+} from "./colors";
+
+import { componentRadius, radius } from "./radius";
+import { shadows } from "./shadows";
+
 import {
   fontFamily,
   fontSize,
@@ -15,7 +17,17 @@ import {
   letterSpacing,
   lineHeight,
   textStyles,
-} from "@/styles/typography";
+} from "./typography";
+
+/* =========================================
+   DESIGN SYSTEM TYPES
+========================================= */
+
+export type ThemeMode = "light" | "dark" | "system";
+
+/* =========================================
+   SPACING
+========================================= */
 
 export const spacing = {
   0: 0,
@@ -31,36 +43,76 @@ export const spacing = {
   8: 32,
   10: 40,
   12: 48,
+  16: 64,
 } as const;
+
+/* =========================================
+   LAYOUT
+========================================= */
 
 export const layout = {
   screenPaddingX: spacing[4],
+  screenPaddingY: spacing[4],
+
   screenGap: spacing[6],
+  sectionGap: spacing[6],
+
   cardPadding: spacing[4],
+  cardGap: spacing[3],
+
   inputHeight: 48,
-  buttonHeight: 52,
+  buttonHeight: 48,
+  buttonHeightLarge: 52,
+
+  headerHeight: 56,
   tabBarHeight: 64,
+
+  minimumTouchTarget: 44,
   hitSlop: spacing[2],
+
+  modalMaxHeight: "90%",
 } as const;
 
-/** Press feedback — design system UI behavior */
-export const pressScale = 0.97;
+/* =========================================
+   INTERACTION
+========================================= */
 
-/** @deprecated Use `componentRadius.sheet` */
-export const sheetRadius = componentRadius.sheet;
+export const interaction = {
+  pressScale: 0.97,
+  pressedOpacity: 0.75,
+  disabledOpacity: 0.5,
+} as const;
 
-export const lightTheme = {
-  mode: "light" as const,
-  colors,
+/* =========================================
+   ANIMATION
+========================================= */
+
+export const animation = {
+  fast: 150,
+  normal: 200,
+  slow: 300,
+} as const;
+
+/* =========================================
+   SHARED THEME
+========================================= */
+
+const sharedTheme = {
   palette,
   priorityColors,
   taskStatusColors,
   roleAccentColors,
+
   radius,
   componentRadius,
   shadows,
+
   spacing,
   layout,
+
+  interaction,
+  animation,
+
   typography: {
     fontFamily,
     fontSize,
@@ -69,17 +121,40 @@ export const lightTheme = {
     letterSpacing,
     textStyles,
   },
-  pressScale,
 } as const;
+
+/* =========================================
+   LIGHT THEME
+========================================= */
+
+export const lightTheme = {
+  ...sharedTheme,
+
+  mode: "light" as const,
+  colors,
+} as const;
+
+/* =========================================
+   DARK THEME
+========================================= */
 
 export const darkTheme = {
-  ...lightTheme,
+  ...sharedTheme,
+
   mode: "dark" as const,
-  colors: darkColors,
+  colors,
 } as const;
 
-export type Theme = typeof lightTheme;
-export type ThemeMode = Theme["mode"];
+/* =========================================
+   THEME TYPES
+========================================= */
 
-/** Active app theme — swap when dark mode is enabled */
+export type Theme = typeof lightTheme;
+
+export type ResolvedThemeMode = "light" | "dark";
+
+/**
+ * @deprecated Use useAppTheme() for runtime theme access.
+ * This export always represents the light theme.
+ */
 export const theme = lightTheme;

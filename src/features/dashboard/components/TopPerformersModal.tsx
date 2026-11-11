@@ -1,0 +1,207 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  Animated as RNAnimated,
+  Text,
+  View,
+} from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+
+import { IconButton } from "@/components/ui/IconButton";
+import { Avatar } from "@/components/ui/Avatar";
+import { type TopPerformer } from "@/features/dashboard/utils/topPerformers";
+import { colors, palette, toneColors } from "@/styles";
+
+type TopPerformersModalProps = {
+  visible: boolean;
+  performers: TopPerformer[];
+  onClose: () => void;
+  onViewDetails?: (performer: TopPerformer) => void;
+};
+
+type PodiumRank = 1 | 2 | 3;
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
+const RANK_STYLE = {
+  1: { medal: "🥇", color: palette.amber[500], avatar: 64 },
+  2: { medal: "🥈", color: palette.gray[400], avatar: 52 },
+  3: { medal: "🥉", color: toneColors.warning.fg, avatar: 52 },
+} as const;
+
+const MODAL_SHADOW = Platform.select({
+  ios: {
+    shadowColor: palette.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+  },
+  android: { elevation: 4 },
+});
+
+function CelebrationOverlay({ burstKey }: { burstKey: number }) {
+  if (burstKey === 0) return null;
+
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 50 }}
+    >
+      <ConfettiCannon
+        key={`center-${burstKey}`}
+        count={200}
+        origin={{ x: SCREEN_WIDTH / 2, y: 0 }}
+        autoStart
+        autoStartDelay={120}
+        fadeOut
+        colors={[palette.amber[500], colors.warning, colors.brand, colors.brand, palette.white]}
+      />
+    </View>
+  );
+}
+
+function RankCard({
+  item,
+  isCenter,
+  onPress,
+}: {
+  item: TopPerformer;
+  isCenter: boolean;
+  onPress: () => void;
+}) {
+  const style = RANK_STYLE[item.rank as PodiumRank];
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{ flex: 1, marginTop: isCenter ? 0 : 20 }}
+      className="items-center rounded-2xl border border-line bg-surface px-2 py-4"
+    >
+      <Text className="text-[20px]">{style.medal}</Text>
+
+      <View className="mt-2 rounded-full" style={{ borderWidth: 2, borderColor: style.color }}>
+        <Avatar name={item.name} imageUrl={item.avatarUrl} size={style.avatar} />
+      </View>
+
+      <Text
+        className="mt-2 text-center text-label font-semibold text-fg"
+        numberOfLines={1}
+      >
+        {item.name}
+      </Text>
+
+      <Text
+        className="mt-1 text-headline font-bold"
+        style={{ color: style.color }}
+      >
+        {item.score}%
+      </Text>
+    </Pressable>
+  );
+}
+
+export function TopPerformersModal({
+  visible,
+  performers,
+  onClose,
+  onViewDetails,
+}: TopPerformersModalProps) {
+  const [celebrationBurst, setCelebrationBurst] = useState(0);
+  const modalScaleRef = useRef<RNAnimated.Value | null>(null);
+  if (modalScaleRef.current === null) {
+    modalScaleRef.current = new RNAnimated.Value(0.95);
+  }
+  // Lazy ref initialization (react.dev/reference/react/useRef#avoiding-recreating-the-ref-contents):
+  // reading .current here is safe since it's only ever set once, above.
+  // eslint-disable-next-line react-hooks/refs
+  const modalScale = modalScaleRef.current;
+
+  const podiumOrder = useMemo(
+    () =>
+      [2, 1, 3]
+        .map((rank) => performers.find((item) => item.rank === rank))
+        .filter((item): item is TopPerformer => Boolean(item)),
+    [performers],
+  );
+
+  // Bump the burst counter during render (not in the effect below) so opening
+  // the modal doesn't cost an extra commit just to retrigger the confetti.
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) setCelebrationBurst((prev) => prev + 1);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
+
+    modalScale.setValue(0.95);
+    RNAnimated.spring(modalScale, {
+      toValue: 1,
+      damping: 16,
+      stiffness: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [visible, modalScale]);
+
+  const handlePress = (performer: TopPerformer) => {
+    onViewDetails?.(performer);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View className="flex-1 items-center justify-center bg-black/45 px-5">
+        <CelebrationOverlay burstKey={celebrationBurst} />
+
+        <RNAnimated.View
+          style={{
+            transform: [{ scale: modalScale }],
+            width: "100%",
+            maxWidth: 320,
+            zIndex: 10,
+            ...MODAL_SHADOW,
+          }}
+          className="rounded-2xl bg-surface p-5"
+        >
+          <View className="mb-5 flex-row items-center justify-between">
+            <View>
+              <Text className="text-title font-bold text-fg">
+                🏆 Top Performers
+              </Text>
+              <Text className="mt-0.5 text-label text-fg-soft">
+                This month&apos;s best
+              </Text>
+            </View>
+            <IconButton icon="close" variant="subtle" accessibilityLabel="Close" onPress={onClose} />
+          </View>
+
+          {podiumOrder.length === 0 ? (
+            <Text className="py-6 text-center text-caption text-fg-faint">
+              No completed tasks to rank yet.
+            </Text>
+          ) : (
+            <View className="flex-row items-end gap-3">
+              {podiumOrder.map((item) => (
+                <RankCard
+                  key={item.id}
+                  item={item}
+                  isCenter={item.rank === 1}
+                  onPress={() => handlePress(item)}
+                />
+              ))}
+            </View>
+          )}
+        </RNAnimated.View>
+      </View>
+    </Modal>
+  );
+}

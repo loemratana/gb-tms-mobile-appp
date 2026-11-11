@@ -3,12 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getDepartmentById,
   getDepartmentMembers,
+  getDepartmentTree,
   listDepartments,
 } from "@/services/departments.service";
 
 export const departmentKeys = {
   all: ["departments"] as const,
   lists: () => [...departmentKeys.all, "list"] as const,
+  // Nested under lists() so the department mutations that invalidate lists() also refresh the tree.
+  tree: () => [...departmentKeys.lists(), "tree"] as const,
   details: () => [...departmentKeys.all, "detail"] as const,
   detail: (id: string) => [...departmentKeys.details(), id] as const,
   members: (id: string) => [...departmentKeys.detail(id), "members"] as const,
@@ -19,6 +22,15 @@ export function useDepartments() {
     queryKey: departmentKeys.lists(),
     queryFn: listDepartments,
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useDepartmentTree() {
+  return useQuery({
+    queryKey: departmentKeys.tree(),
+    queryFn: getDepartmentTree,
+    // Shorter than the list: membership also changes through user edits, which don't invalidate this key.
+    staleTime: 60_000,
   });
 }
 

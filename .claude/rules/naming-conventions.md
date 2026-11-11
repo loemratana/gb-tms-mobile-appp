@@ -14,7 +14,26 @@ types/        not type/
 utils/        not util/
 ```
 
-Some existing folders under `src/features/employee` and `src/features/manager` still use the singular form (`hook/`, `screen/`, `store/`). Do not perpetuate that when adding new files to those features — create the plural folder instead. Do not mass-rename existing folders as a drive-by change; that is a separate refactor.
+## Project layout
+
+Features are organised by **domain**, not by role. There are no `employee/` or `manager/` feature folders — role differences live inside the screens (e.g. `canAccessManagerArea(role)`).
+
+```text
+src/
+├── app/            Expo Router routes only — thin files that re-export a feature screen
+├── components/     Shared UI used across features: ui/, layout/, navigation/
+├── config/         App-wide setup (env, React Query client, Sentry)
+├── hooks/          Shared hooks not tied to one feature
+├── lib/            Infrastructure: API client, push notifications, storage
+├── services/       API modules, one per backend resource (`*.service.ts`)
+├── stores/         Zustand global client state
+├── styles/         Design tokens (colors, typography, radius, shadows, theme)
+└── features/
+    ├── auth/  calendar/  dashboard/  notifications/  profile/  tasks/  team/
+    └── users/  departments/          (data hooks + types only)
+```
+
+Inside a feature use only: `components/`, `hooks/`, `screens/`, `schemas/`, `types/`, `utils/`. Group a large `components/` folder by area (e.g. `tasks/components/{list,create,detail,submissions,reminders,voice,shared}`). Don't add `helpers/` or `data/` folders — pure functions and constants go in `utils/`.
 
 ## Files
 

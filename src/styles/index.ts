@@ -1,5 +1,8 @@
-export * from "@/styles/colors";
-export * from "@/styles/radius";
-export * from "@/styles/shadows";
-export * from "@/styles/typography";
-export * from "@/styles/theme";
+export * from "./colors";
+export { isDarkMode } from "./colorScheme";
+export { themeVars } from "./themeVars";
+export * from "./radius";
+export * from "./shadows";
+export * from "./typography";
+export * from "./theme";
+export * from "./status";

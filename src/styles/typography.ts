@@ -1,6 +1,6 @@
 import { TextStyle } from "react-native";
 
-import { colors } from "@/styles/colors";
+import { colors } from "./colors";
 
 export const fontFamily = {
   regular: undefined,

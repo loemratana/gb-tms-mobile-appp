@@ -9,6 +9,7 @@ export type UserResponse = {
   id: string;
   email: string;
   fullName: string;
+  phoneNumber: string | null;
   avatarUrl: string | null;
   status: UserStatus;
   active: boolean;
@@ -17,14 +18,20 @@ export type UserResponse = {
   position: UserPositionRef | null;
   department: UserDepartmentRef | null;
   manager: UserManagerRef | null;
-  /** A user has exactly one role — see task-management-api's User.role (role_id, NOT NULL). */
-  role: UserRoleRef;
+  /** Older API shape: a single role. */
+  role?: UserRoleRef | null;
+  /** Current API shape (`UserResponse.roles`): a set of roles. */
+  roles?: UserRoleRef[] | null;
+  /** Effective permission names (e.g. "tasks:assign:team"). Only sent by `GET /users/me`. */
+  permissions?: string[] | null;
 };
 
 export type UserCreateRequest = {
   email: string;
   password: string;
   fullName: string;
+  /** Server pattern: optional "+", then 6–20 digits, spaces, "()" or "-". */
+  phoneNumber?: string;
   positionId?: string;
   managerId?: string;
   roleId: string;
@@ -34,6 +41,7 @@ export type UserCreateRequest = {
 export type UserUpdateRequest = {
   email?: string;
   fullName?: string;
+  phoneNumber?: string;
   /** Sic — typo in the real API field name (`avartarUrl`, not `avatarUrl`). Send exactly this key. */
   avartarUrl?: string;
   positionId?: string;
@@ -99,4 +107,81 @@ export type UserSearchParams = {
   page?: number;
   size?: number;
   sort?: string;
+};
+
+export type PerformanceRating = "EXCELLENT" | "GOOD" | "AVERAGE" | "NEEDS_IMPROVEMENT" | "NO_DATA";
+
+export type PerformanceTaskBrief = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  dueDate: string;
+  progress: number;
+  /** Negative when overdue. */
+  daysUntilDue: number;
+};
+
+/** GET /users/{id}/performance — all rates are 0-100 with one decimal place. */
+export type UserPerformanceResponse = {
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+    positionName: string | null;
+    departmentName: string | null;
+  };
+  from: string | null;
+  to: string | null;
+  tasks: {
+    total: number;
+    active: number;
+    completed: number;
+    todo: number;
+    inProgress: number;
+    inReview: number;
+    rejected: number;
+    blocked: number;
+    cancelled: number;
+    overdue: number;
+    completedOnTime: number;
+    completedLate: number;
+  };
+  rates: {
+    completionRate: number;
+    onTimeRate: number;
+    overdueRate: number;
+  };
+  effort: {
+    avgCompletionDays: number | null;
+    totalEstimatedHours: number;
+    totalActualHours: number;
+    estimateAccuracy: number | null;
+  };
+  submissions: {
+    total: number;
+    approved: number;
+    rejected: number;
+    pending: number;
+    approvalRate: number;
+    firstPassApprovalRate: number;
+    avgRoundsPerTask: number;
+  };
+  /** 0-100: 40% completion, 30% on-time, 30% first-pass approval. */
+  performanceScore: number;
+  rating: PerformanceRating;
+  statusBreakdown: { status: string; count: number }[];
+  priorityBreakdown: { priority: string; total: number; completed: number; overdue: number; completionRate: number }[];
+  /** Last 6 months, oldest first; month is "yyyy-MM". */
+  monthlyTrend: { month: string; assigned: number; completed: number; completedOnTime: number }[];
+  upcomingDeadlines: PerformanceTaskBrief[];
+  overdueTasks: PerformanceTaskBrief[];
+  insights: string[];
+};
+
+export type UserPerformanceParams = {
+  /** yyyy-MM-dd, filters by task creation date. */
+  from?: string;
+  to?: string;
 };

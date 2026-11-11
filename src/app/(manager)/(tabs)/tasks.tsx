@@ -1,1 +1,1 @@
-export { default } from "@/features/manager/screen/ManagerTasksScreen";
+export { default } from "@/features/tasks/screens/ManagerTasksScreen";

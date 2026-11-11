@@ -10,7 +10,7 @@ import {
   updateUser,
   uploadUserAvatar,
 } from "@/services/users.service";
-import { userKeys } from "@/features/users/hooks/useUsers";
+import { userKeys } from "./useUsers";
 import type {
   AssignManagerRequest,
   AssignOrgRequest,

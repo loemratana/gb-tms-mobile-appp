@@ -13,8 +13,14 @@ import {
   unregisterDevice,
   type DevicePlatform,
 } from "@/services/push.service";
+import { queryClient } from "@/config/query.config";
+import { getMeetingDetailPathForRole, getTaskDetailPathForRole } from "@/features/auth/utils/navigation";
+import { meetingKeys } from "@/features/meetings/hooks/useMeetings";
+import { taskKeys } from "@/features/tasks/hooks/useTasks";
 import { useAuthStore } from "@/stores/authStore";
-import { getPushToken, setPushToken, clearPushToken } from "@/utils/storage";
+import { useNotificationStore } from "@/stores/notificationStore";
+import { TaskAlarm } from "@modules/task-alarm";
+import { getPushToken, setPushToken, clearPushToken } from "./storage";
 
 /**
  * @react-native-firebase/messaging requires a custom native build — it can never work in
@@ -34,7 +40,12 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
  */
 const skipNotificationsModule = isExpoGo && Platform.OS === "android";
 
-console.log(
+/** Push diagnostics: development builds only, so release logs never carry tokens or noise. */
+function debugLog(...args: unknown[]): void {
+  if (__DEV__) console.log(...args);
+}
+
+debugLog(
   `[PushDebug] module load: isExpoGo=${isExpoGo}, executionEnvironment=${Constants.executionEnvironment}, skipNotificationsModule=${skipNotificationsModule}`
 );
 
@@ -52,14 +63,15 @@ if (!isExpoGo) {
     // doesn't exist in Expo Go — so it must only happen once we know we're not in Expo Go.
     const messagingModule = require("@react-native-firebase/messaging");
     messagingInstance = messagingModule.getMessaging();
-    console.log("[PushDebug] messagingInstance acquired successfully");
+    debugLog("[PushDebug] messagingInstance acquired successfully");
 
     // Must run as early as possible, outside the React tree, so background/quit-state pushes
     // are handled even before the JS app has mounted. Runs once on first import of this module.
-    messagingModule.setBackgroundMessageHandler(messagingInstance, async () => {
-      // The OS already displays the notification and plays the sound for background/quit
-      // state — the backend sends a "notification" payload (see FirebaseNotificationSender.java),
-      // not a silent data-only message. Nothing to do here beyond acknowledging receipt.
+    messagingModule.setBackgroundMessageHandler(messagingInstance, async (message: RemoteMessage) => {
+      // Ordinary pushes carry a "notification" payload, so the OS shows them itself.
+      // Task reminders arrive data-only on Android (FirebaseNotificationSender.java) so
+      // they can ring the full-screen alarm instead of a plain notification.
+      ringReminderAlarm(message);
     });
   } catch (error) {
     console.warn("[PushDebug] Firebase messaging native module unavailable", error);
@@ -90,6 +102,48 @@ if (notifications) {
  */
 const ANDROID_NOTIFICATION_CHANNEL_ID = "tms-default-v3";
 
+/**
+ * Task reminders get their own channel with an alarm-clock sound, max importance and
+ * a long vibration, so they stand out from ordinary notifications. The backend sends
+ * TASK_REMINDER pushes to this same channel id (FirebaseNotificationSender) — keep the
+ * two in sync, and bump the suffix here and there if the sound or vibration changes.
+ */
+export const ANDROID_REMINDER_CHANNEL_ID = "task-reminders-v1";
+/** Bundled via the expo-notifications plugin in app.json (assets/sounds/alarm.wav). */
+const REMINDER_SOUND = "alarm.wav";
+/**
+ * Expo Go can't bundle our sounds (alarm.wav only ships in dev/production builds),
+ * so asking for it there just logs "Custom sound not found". Use the default sound
+ * in Expo Go; real builds get the alarm.
+ */
+const REMINDER_NOTIFICATION_SOUND: string | boolean = isExpoGo ? true : REMINDER_SOUND;
+const REMINDER_NOTIFICATION_TYPE = "TASK_REMINDER";
+
+function isReminder(message: RemoteMessage): boolean {
+  return message.data?.type === REMINDER_NOTIFICATION_TYPE;
+}
+
+function dataString(message: RemoteMessage, key: string): string | undefined {
+  const value = message.data?.[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+/**
+ * Rings the full-screen, looping task alarm for a reminder push (Android with the
+ * TaskAlarm module). Returns false when it didn't — not a reminder, iOS, or an older
+ * build without the module — so the caller can fall back to a normal notification.
+ */
+function ringReminderAlarm(message: RemoteMessage): boolean {
+  if (!isReminder(message) || !TaskAlarm.isAvailable) return false;
+
+  TaskAlarm.ring(
+    dataString(message, "title") ?? message.notification?.title ?? "Task reminder",
+    dataString(message, "body") ?? message.notification?.body ?? "",
+    dataString(message, "referenceId") ?? null,
+  );
+  return true;
+}
+
 function currentDevicePlatform(): DevicePlatform | null {
   if (Platform.OS === "ios") return "IOS";
   if (Platform.OS === "android") return "ANDROID";
@@ -108,34 +162,64 @@ async function ensureAndroidChannel(): Promise<void> {
     // resolve, and "default" isn't a bundled asset, hence the "Custom sound not found" error.
     vibrationPattern: [0, 250, 250, 250],
   });
+
+  await notifications.setNotificationChannelAsync(ANDROID_REMINDER_CHANNEL_ID, {
+    name: "Task reminders",
+    description: "Alarm sound when a task reminder is due",
+    importance: notifications.AndroidImportance.MAX,
+    sound: REMINDER_SOUND,
+    vibrationPattern: [0, 600, 300, 600, 300, 600],
+    enableVibrate: true,
+    lockscreenVisibility: notifications.AndroidNotificationVisibility.PUBLIC,
+    // Play through the alarm stream so it follows the alarm volume, not the ringer.
+    audioAttributes: {
+      usage: notifications.AndroidAudioUsage.ALARM,
+      contentType: notifications.AndroidAudioContentType.SONIFICATION,
+    },
+  });
 }
 
 function navigateToNotificationTarget(message: RemoteMessage): void {
   const referenceType = message.data?.referenceType;
   const referenceId = message.data?.referenceId;
-  if (referenceType !== "TASK" || typeof referenceId !== "string" || !referenceId) {
-    return;
-  }
+  if (typeof referenceId !== "string" || !referenceId) return;
 
   const role = useAuthStore.getState().user?.role;
-  if (role === "MANAGER") {
-    router.push(`/(manager)/tasks/${referenceId}`);
-  } else {
-    router.push(`/(employee)/tasks/${referenceId}`);
+  if (!role) return;
+  if (referenceType === "TASK") {
+    router.push(getTaskDetailPathForRole(role, referenceId));
+  } else if (referenceType === "MEETING_BOOKING") {
+    router.push(getMeetingDetailPathForRole(role, referenceId));
   }
+}
+
+/**
+ * A push means something changed on the server (task assigned, status changed,
+ * comment…). Refresh task data and the notification list right away instead of
+ * waiting for the next poll or a manual refresh.
+ */
+function refreshAfterPush(): void {
+  void queryClient.invalidateQueries({ queryKey: taskKeys.all });
+  void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+  void useNotificationStore.getState().fetchAll();
 }
 
 async function showForegroundNotification(message: RemoteMessage): Promise<void> {
   if (!notifications) return;
+  const reminder = isReminder(message);
 
   await notifications.scheduleNotificationAsync({
     content: {
       title: message.notification?.title ?? "New notification",
       body: message.notification?.body ?? "",
-      sound: true,
+      sound: reminder ? REMINDER_NOTIFICATION_SOUND : true,
+      ...(reminder ? { interruptionLevel: "timeSensitive" as const } : {}),
       data: message.data ?? {},
     },
-    trigger: Platform.OS === "android" ? { channelId: ANDROID_NOTIFICATION_CHANNEL_ID } : null,
+    trigger:
+      Platform.OS === "android"
+        ? { channelId: reminder ? ANDROID_REMINDER_CHANNEL_ID : ANDROID_NOTIFICATION_CHANNEL_ID }
+        : null,
   });
 }
 
@@ -167,6 +251,51 @@ export async function sendMockPushNotification(): Promise<void> {
 }
 
 /**
+ * DEBUG ONLY: shows a local notification exactly like a TASK_REMINDER push, 5 seconds
+ * from now — lock the phone or background the app to hear the alarm as users will.
+ */
+export async function sendMockReminderNotification(): Promise<void> {
+  if (TaskAlarm.isAvailable) {
+    if (!TaskAlarm.canUseFullScreenIntent()) {
+      Alert.alert(
+        "Allow full-screen alarms",
+        "Turn on full-screen notifications for this app so reminders can show over the lock screen.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Open settings", onPress: () => TaskAlarm.openFullScreenIntentSettings() },
+        ],
+      );
+    }
+    // Lock the phone within 5 seconds to see it over the lock screen.
+    setTimeout(() => {
+      TaskAlarm.ring("Task reminder", "Test alarm — this is how a due reminder will ring.", null);
+    }, 5_000);
+    return;
+  }
+
+  if (!notifications) {
+    Alert.alert("Not supported in Expo Go", "Reminder sounds need a development build.");
+    return;
+  }
+
+  await ensureAndroidChannel();
+  await notifications.scheduleNotificationAsync({
+    content: {
+      title: "Task reminder",
+      body: "Test alarm — this is how a due reminder will sound.",
+      sound: REMINDER_NOTIFICATION_SOUND,
+      interruptionLevel: "timeSensitive",
+      data: { mock: true, type: REMINDER_NOTIFICATION_TYPE },
+    },
+    trigger: {
+      type: notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 5,
+      ...(Platform.OS === "android" ? { channelId: ANDROID_REMINDER_CHANNEL_ID } : {}),
+    },
+  });
+}
+
+/**
  * DEBUG ONLY: fetches the raw FCM token and shows it, bypassing permission checks, the
  * Android channel setup, and the backend registration call. Use this to isolate whether
  * `getToken()` itself works on this device — if this hangs or throws, the problem is
@@ -180,9 +309,9 @@ export async function debugGetFcmToken(): Promise<void> {
 
   try {
     const messagingModule = require("@react-native-firebase/messaging");
-    console.log("[PushDebug] debugGetFcmToken: requesting token directly...");
+    debugLog("[PushDebug] debugGetFcmToken: requesting token directly...");
     const token = await messagingModule.getToken(messagingInstance);
-    console.log(`[PushDebug] debugGetFcmToken: got token: ${token}`);
+    debugLog(`[PushDebug] debugGetFcmToken: got token: ${token}`);
     Alert.alert("FCM token", token);
   } catch (error) {
     console.warn("[PushDebug] debugGetFcmToken failed", error);
@@ -197,11 +326,11 @@ async function syncDeviceToken(token: string): Promise<void> {
 
   const previous = await getPushToken();
   if (previous === token) {
-    console.log("[PushDebug] syncDeviceToken: token unchanged from cached value, skipping backend call");
+    debugLog("[PushDebug] syncDeviceToken: token unchanged from cached value, skipping backend call");
     return;
   }
 
-  console.log(`[PushDebug] syncDeviceToken: calling registerDevice API (platform=${platform})`);
+  debugLog(`[PushDebug] syncDeviceToken: calling registerDevice API (platform=${platform})`);
   await registerDevice(token, platform);
   await setPushToken(token);
 }
@@ -215,12 +344,15 @@ export function startPushListeners(): () => void {
 
   const messagingModule = require("@react-native-firebase/messaging");
   const unsubMessage = messagingModule.onMessage(messagingInstance, (message: RemoteMessage) => {
+    refreshAfterPush();
+    if (ringReminderAlarm(message)) return;
     void showForegroundNotification(message);
   });
 
   const unsubOpened = messagingModule.onNotificationOpenedApp(
     messagingInstance,
     (message: RemoteMessage) => {
+      refreshAfterPush();
       navigateToNotificationTarget(message);
     }
   );
@@ -257,36 +389,12 @@ export async function consumeInitialNotification(): Promise<void> {
  * No-ops in Expo Go or on simulators/emulators, where a real push token isn't available.
  */
 export async function registerForPushNotifications(): Promise<void> {
-  // TEMPORARY diagnostics: console.log (readable via the Metro terminal) plus __DEV__-only
-  // Alert popups at every decision point. Remove once push registration is confirmed working
-  // end-to-end.
-  console.log("[PushDebug] registerForPushNotifications() called");
-
-  if (!messagingInstance) {
-    console.log("[PushDebug] bail: messagingInstance is null (Expo Go, or native Firebase module unavailable on this build)");
-    if (__DEV__) Alert.alert("Push debug", "messagingInstance is null (Expo Go, or native Firebase module unavailable on this build).");
-    return;
-  }
-  if (!Device.isDevice) {
-    console.log("[PushDebug] bail: Device.isDevice is false (simulator/emulator)");
-    if (__DEV__) Alert.alert("Push debug", "Device.isDevice is false (simulator/emulator).");
-    return;
-  }
-  if (!notifications) {
-    console.log("[PushDebug] bail: notifications module unavailable (Expo Go on Android)");
-    if (__DEV__) Alert.alert("Push debug", "notifications module unavailable (Expo Go on Android).");
-    return;
-  }
+  if (!messagingInstance || !Device.isDevice || !notifications) return;
 
   const { status } = await notifications.requestPermissionsAsync();
-  console.log(`[PushDebug] permission status="${status}"`);
-  if (status !== "granted") {
-    if (__DEV__) Alert.alert("Push debug", `Permission not granted: status="${status}"`);
-    return;
-  }
+  if (status !== "granted") return;
 
   await ensureAndroidChannel();
-  console.log("[PushDebug] android channel ensured, requesting FCM token...");
 
   try {
     const messagingModule = require("@react-native-firebase/messaging");
@@ -294,30 +402,52 @@ export async function registerForPushNotifications(): Promise<void> {
       await messagingModule.registerDeviceForRemoteMessages(messagingInstance);
     }
     const token = await messagingModule.getToken(messagingInstance);
-    console.log(`[PushDebug] got FCM token: ${token.slice(0, 24)}...`);
-    if (__DEV__) Alert.alert("Push debug", `Got FCM token, registering with backend:\n${token.slice(0, 24)}...`);
     await syncDeviceToken(token);
-    console.log("[PushDebug] registered with backend successfully");
-    if (__DEV__) Alert.alert("Push debug", "Registered with backend successfully.");
   } catch (error) {
-    console.warn("[PushDebug] Push registration failed", error);
-    if (__DEV__) {
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      Alert.alert("Push debug: registration failed", message);
-    }
+    console.warn("Push registration failed", error);
   }
 }
 
-/** Unregisters this device's push token from the backend. Call on sign-out. */
-export async function unregisterPushNotifications(): Promise<void> {
+/**
+ * Stops this device receiving the signed-out user's pushes. Call on sign-out.
+ *
+ * `localOnly` skips the backend call — used when the session already died (refresh failed),
+ * where an authenticated request would only 401 again. Deleting the FCM token on the device
+ * covers that case: the backend's registration becomes invalid and is pruned on the next send.
+ */
+export async function unregisterPushNotifications(options?: { localOnly?: boolean }): Promise<void> {
   const token = await getPushToken();
-  if (!token) return;
 
   try {
-    await unregisterDevice(token);
+    if (token && !options?.localOnly) {
+      await unregisterDevice(token);
+    }
   } catch {
-    // Best-effort; an unreachable/stale token gets pruned server-side on the next failed send.
+    // Best-effort; the local token deletion below still stops delivery.
   } finally {
+    await deleteDeviceFcmToken();
     await clearPushToken();
   }
+}
+
+async function deleteDeviceFcmToken(): Promise<void> {
+  if (!messagingInstance) return;
+  try {
+    const messagingModule = require("@react-native-firebase/messaging");
+    await messagingModule.deleteToken(messagingInstance);
+  } catch (error) {
+    console.warn("Deleting FCM token failed", error);
+  }
+}
+
+/** "unavailable": this build can't show notifications at all (Expo Go on Android). */
+export type NotificationPermissionStatus = "granted" | "denied" | "undetermined" | "unavailable";
+
+/** The OS notification permission, for the Settings screen. Never prompts. */
+export async function getNotificationPermissionStatus(): Promise<NotificationPermissionStatus> {
+  if (!notifications) return "unavailable";
+  const { status } = await notifications.getPermissionsAsync();
+  if (status === "granted") return "granted";
+  if (status === "denied") return "denied";
+  return "undetermined";
 }

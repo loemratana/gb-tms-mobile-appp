@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-import { NotificationSheetProvider } from "@/features/employee/components/notifications/NotificationSheetProvider";
+import { NotificationSheetProvider } from "@/features/notifications/components/NotificationSheetProvider";
 
 export default function EmployeeLayout() {
   return (
@@ -15,7 +15,56 @@ export default function EmployeeLayout() {
           }}
         />
         <Stack.Screen
+          name="team/index"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="meetings/new"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="meetings/scan"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="meetings/check-in-code"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="meetings/[id]"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
           name="team/[id]"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="submissions"
           options={{
             animation: "slide_from_right",
             presentation: "card",

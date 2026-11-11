@@ -1,49 +1,66 @@
+
+const tokens = require("./src/styles/tokens.json");
+
+const px = (value) => `${value}px`;
+
+/**
+ * Colour classes read CSS variables instead of fixed hex values, so the same build can render
+ * light or dark: src/styles/themeVars.ts sets the variables at the app root from the active
+ * token set (tokens.color or tokens.colorDark). Names match: brand.strong → --color-brand-strong.
+ */
+const toVariableColors = (tree, prefix = "--color") =>
+  Object.fromEntries(
+    Object.entries(tree).map(([key, value]) => {
+      const name = key === "DEFAULT" ? prefix : `${prefix}-${key}`;
+      if (typeof value !== "string") return [key, toVariableColors(value, name)];
+      // Hex tokens support opacity modifiers (bg-brand/10); the rgba overlay is used as-is.
+      return [key, value.startsWith("#") ? `rgb(var(${name}) / <alpha-value>)` : `var(${name})`];
+    }),
+  );
+
+const fontSize = Object.fromEntries(
+  Object.entries(tokens.fontSize).map(([name, [size]]) => [
+    name,
+    px(size),
+  ]),
+);
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
+
   presets: [require("nativewind/preset")],
+
+  darkMode: "class",
+
   theme: {
     extend: {
-      colors: {
-        primary: "#2563EB",
-        success: "#22C55E",
-        warning: "#F59E0B",
-        danger: "#EF4444",
-        brand: "#32CD32",
-        surface: "#F7F8FA",
-        background: "#F3F4F6",
-        card: "#FFFFFF",
-        border: "#E5E7EB",
-        input: "#F9FAFB",
-        muted: "#F3F4F6",
-        foreground: "#111827",
-        "foreground-secondary": "#374151",
-        "foreground-muted": "#6B7280",
-        "foreground-subtle": "#9CA3AF",
-      },
+      colors: toVariableColors(tokens.color),
+
+      fontSize,
+
       borderRadius: {
-        button: "12px",
-        input: "12px",
-        card: "16px",
-        sheet: "24px",
+        control: px(tokens.radius.control),
+        card: px(tokens.radius.card),
+        sheet: px(tokens.radius.sheet),
       },
-      fontSize: {
-        "2xs": ["10px", { lineHeight: "14px" }],
-        xs: ["11px", { lineHeight: "16px" }],
-        sm: ["12px", { lineHeight: "16px" }],
-        md: ["13px", { lineHeight: "18px" }],
-        base: ["14px", { lineHeight: "20px" }],
-        lg: ["15px", { lineHeight: "22px" }],
-        xl: ["16px", { lineHeight: "24px" }],
-        "2xl": ["18px", { lineHeight: "26px" }],
-        "3xl": ["24px", { lineHeight: "32px" }],
-        "4xl": ["26px", { lineHeight: "34px" }],
-      },
+
       spacing: {
         4.5: "18px",
         13: "52px",
       },
+
+      fontFamily: {
+        sans: ["System"],
+        khmer: ["Kantumruy Pro"],
+      },
+
+      boxShadow: {
+        card: "0px 2px 8px rgba(0,0,0,0.04)",
+        elevated: "0px 8px 24px rgba(0,0,0,0.08)",
+      },
     },
   },
+
   plugins: [],
 };

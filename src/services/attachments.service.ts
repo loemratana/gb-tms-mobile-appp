@@ -2,7 +2,10 @@ import { api, type ApiEnvelope } from "@/lib/api";
 import type { TaskAttachmentResponse } from "@/features/tasks/types/attachment.types";
 import type { PageResponse } from "@/features/tasks/types/task.types";
 
-/** Accepts photos (image/*) and PDFs, plus a small set of office/zip types, up to 20MB. */
+/** Max size the backend accepts per file (AttachmentUploadPolicy). */
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+
+/** Accepts photos (image/*) and PDFs, plus a small set of office/zip/text types, up to 20MB. */
 export async function uploadTaskAttachment(
   taskId: string,
   file: { uri: string; name: string; mimeType: string }
@@ -30,4 +33,9 @@ export async function listTaskAttachments(
     params: { size: 100 },
   });
   return data.data.content;
+}
+
+/** Allowed for the uploader or anyone who can update the task; the server answers 403 otherwise. */
+export async function deleteTaskAttachment(attachmentId: string): Promise<void> {
+  await api.delete(`/attachments/${attachmentId}`);
 }

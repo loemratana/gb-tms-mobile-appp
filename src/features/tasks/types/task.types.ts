@@ -1,4 +1,4 @@
-import type { TaskAttachmentResponse } from "@/features/tasks/types/attachment.types";
+import type { TaskAttachmentResponse } from "./attachment.types";
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -56,13 +56,30 @@ export type TaskResponse = {
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  progress: number;
+  /** 0–100. The server derives it from status and subtasks; older servers sent null. */
+  progress: number | null;
   /** Cheap counts for list/card views, always populated. */
   commentCount?: number;
   attachmentCount?: number;
   /** Full comment/attachment lists — only populated on the single-task detail endpoint (GET /tasks/{id}). */
   comments?: TaskCommentResponse[];
   attachments?: TaskAttachmentResponse[];
+};
+
+/** `GET /tasks/counts/by-due-month`: top-level, non-cancelled tasks per due month. */
+export type TaskMonthlyCountsResponse = {
+  year: number;
+  total: number;
+  /** 12 counts, index 0 = January. */
+  months: number[];
+};
+
+/** `GET /tasks/counts`: exact counts for the tasks `GET /tasks` would return with the same filters. */
+export type TaskCountsResponse = {
+  total: number;
+  overdue: number;
+  /** Keyed by API status; every status is present. */
+  byStatus: Record<TaskStatus, number>;
 };
 
 export type PageResponse<T> = {
@@ -130,6 +147,10 @@ export type TaskSearchParams = {
   createdById?: string;
   assignedById?: string;
   titleContains?: string;
+  /** Only top-level tasks (no subtasks). */
+  topLevelOnly?: boolean;
+  /** Only overdue tasks: due before today and not DONE/APPROVED/CANCELLED. */
+  overdue?: boolean;
   page?: number;
   size?: number;
   sort?: string;
@@ -162,14 +183,6 @@ export type CreateTaskCommentRequest = {
 };
 
 /** Completion-rate KPI derived from the caller's own assigned tasks — no manager score or rank. */
-export type KpiSummaryResponse = {
-  totalTasks: number;
-  completedTasks: number;
-  inProgressTasks: number;
-  overdueTasks: number;
-  kpi: number;
-};
-
 export type ManagerAssignedMemberWorkload = {
   memberId: string;
   memberName: string;

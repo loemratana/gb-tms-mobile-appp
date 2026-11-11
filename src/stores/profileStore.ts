@@ -3,7 +3,7 @@ import { create } from "zustand";
 import {
   defaultProfileUser,
   type ProfileUser,
-} from "@/features/employee/data/profile";
+} from "@/features/profile/utils/profile";
 
 type ProfileState = {
   user: ProfileUser;

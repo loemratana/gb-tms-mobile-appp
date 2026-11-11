@@ -6,10 +6,12 @@ import {
   assignTask,
   changeTaskStatus,
   createTask,
+  deleteTask,
   updateTask,
   updateTaskReminderSettings,
 } from "@/services/tasks.service";
-import { taskKeys } from "@/features/tasks/hooks/useTasks";
+import { deleteTaskAttachment, uploadTaskAttachment } from "@/services/attachments.service";
+import { invalidateTaskListsAndSummaries, taskKeys } from "./useTasks";
 import type {
   AssignMultipleUsersRequest,
   AssignTaskRequest,
@@ -21,13 +23,70 @@ import type {
   UpdateTaskRequest,
 } from "@/features/tasks/types/task.types";
 
+type AttachmentUploadFile = { uri: string; name: string; mimeType: string };
+
+type AttachmentUploadResult = {
+  uploaded: number;
+  failed: number;
+  total: number;
+  /** The first failure's error, so the caller can say why (e.g. file type not allowed). */
+  firstError?: unknown;
+};
+
+/** Uploads files in parallel; one failed file doesn't fail the batch, so the caller can report partial success. */
+export function useUploadTaskAttachments(taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (files: AttachmentUploadFile[]): Promise<AttachmentUploadResult> => {
+      const results = await Promise.allSettled(
+        files.map((file) => uploadTaskAttachment(taskId, file)),
+      );
+      const uploaded = results.filter((result) => result.status === "fulfilled").length;
+      const firstFailure = results.find((result) => result.status === "rejected");
+      return {
+        uploaded,
+        failed: results.length - uploaded,
+        total: results.length,
+        firstError: firstFailure?.status === "rejected" ? firstFailure.reason : undefined,
+      };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
+    },
+  });
+}
+
+export function useDeleteTaskAttachment(taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (attachmentId: string) => deleteTaskAttachment(attachmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
+    },
+  });
+}
+
+export function useDeleteTask(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => deleteTask(id),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: taskKeys.detail(id) });
+      invalidateTaskListsAndSummaries(queryClient);
+    },
+  });
+}
+
 export function useCreateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: CreateTaskRequest) => createTask(input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      invalidateTaskListsAndSummaries(queryClient);
     },
   });
 }
@@ -37,7 +96,7 @@ function cacheTaskDetail(
   task: TaskResponse
 ): void {
   queryClient.setQueryData(taskKeys.detail(task.id), task);
-  void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+  invalidateTaskListsAndSummaries(queryClient);
 }
 
 export function useUpdateTask(id: string) {
@@ -65,22 +124,12 @@ export function useAssignAdditionalUsers(id: string) {
     mutationFn: (input: AssignMultipleUsersRequest) => assignAdditionalUsers(id, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      invalidateTaskListsAndSummaries(queryClient);
     },
   });
 }
 
-export function useChangeTaskStatus(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (status: TaskStatus) => changeTaskStatus(id, status),
-    onSuccess: (task) => cacheTaskDetail(queryClient, task),
-  });
-}
-
-/** Same as {@link useChangeTaskStatus}, but for list screens with many tasks
- * where the target id isn't known until the mutation is triggered. */
+/** Changes any task's status; the target id is passed per call (list screens act on many tasks). */
 export function useChangeAnyTaskStatus() {
   const queryClient = useQueryClient();
 
@@ -111,7 +160,7 @@ export function useAddTaskComment(taskId: string) {
     mutationFn: (input: CreateTaskCommentRequest) => addTaskComment(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) });
-      void queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      invalidateTaskListsAndSummaries(queryClient);
     },
   });
 }
