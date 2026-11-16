@@ -16,6 +16,8 @@ import type { TabIconConfig } from "./tabIcons";
 
 type ModernTabBarProps = BottomTabBarProps & {
   tabIcons: Record<string, TabIconConfig>;
+  /** Count shown on a tab, by route name, e.g. { dashboard: 3 }. Zero or missing shows nothing. */
+  badgeCounts?: Partial<Record<string, number>>;
   navigation?: {
     emit?: (event: { type: string; target: string; canPreventDefault?: boolean }) => {
       defaultPrevented: boolean;
@@ -30,6 +32,7 @@ export function ModernTabBar({
   navigateToTab,
   navigation,
   tabIcons,
+  badgeCounts,
 }: ModernTabBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -118,6 +121,7 @@ export function ModernTabBar({
               key={route.key}
               config={tabIcons[route.name]}
               isFocused={isFocused}
+              badgeCount={badgeCounts?.[route.name]}
               onPress={() =>
                 handleTabPress(route.key, route.name, isFocused)
               }

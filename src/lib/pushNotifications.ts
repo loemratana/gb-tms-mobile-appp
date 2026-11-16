@@ -6,7 +6,7 @@ import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Device from "expo-device";
 import type * as ExpoNotifications from "expo-notifications";
 import { router } from "expo-router";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 
 import {
   registerDevice,
@@ -14,9 +14,14 @@ import {
   type DevicePlatform,
 } from "@/services/push.service";
 import { queryClient } from "@/config/query.config";
-import { getMeetingDetailPathForRole, getTaskDetailPathForRole } from "@/features/auth/utils/navigation";
+import {
+  canAccessManagerArea,
+  getMeetingDetailPathForRole,
+  getTaskDetailPathForRole,
+} from "@/features/auth/utils/navigation";
 import { meetingKeys } from "@/features/meetings/hooks/useMeetings";
 import { taskKeys } from "@/features/tasks/hooks/useTasks";
+import { awardKeys } from "@/features/team/hooks/usePerformanceAwards";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { TaskAlarm } from "@modules/task-alarm";
@@ -179,18 +184,55 @@ async function ensureAndroidChannel(): Promise<void> {
   });
 }
 
-function navigateToNotificationTarget(message: RemoteMessage): void {
-  const referenceType = message.data?.referenceType;
-  const referenceId = message.data?.referenceId;
-  if (typeof referenceId !== "string" || !referenceId) return;
+type NotificationData = Record<string, unknown> | undefined;
+
+/** One tap can reach both Firebase's and expo-notifications' tap handlers on iOS; open it once. */
+const NAVIGATION_DEDUPE_MS = 3000;
+let lastNavigation: { target: string; at: number } | null = null;
+
+/** Push types that open something without a referenceId (FCM sends a missing id as ""). */
+const LIST_TARGETS = new Set(["OVERDUE_TASKS", "PERFORMANCE_AWARD"]);
+
+function navigateToNotificationTarget(data: NotificationData): void {
+  const referenceType = typeof data?.referenceType === "string" ? data.referenceType : "";
+  const referenceId = typeof data?.referenceId === "string" ? data.referenceId : "";
+  if (!referenceId && !LIST_TARGETS.has(referenceType)) return;
 
   const role = useAuthStore.getState().user?.role;
   if (!role) return;
+
+  const target = `${referenceType}:${referenceId}`;
+  const now = Date.now();
+  if (lastNavigation && lastNavigation.target === target && now - lastNavigation.at < NAVIGATION_DEDUPE_MS) return;
+  lastNavigation = { target, at: now };
+
   if (referenceType === "TASK") {
     router.push(getTaskDetailPathForRole(role, referenceId));
   } else if (referenceType === "MEETING_BOOKING") {
     router.push(getMeetingDetailPathForRole(role, referenceId));
+  } else if (referenceType === "OVERDUE_TASKS") {
+    // A manager's daily summary: the Tasks tab (what they assigned) on its Overdue filter.
+    router.push(
+      canAccessManagerArea(role)
+        ? { pathname: "/(manager)/(tabs)/tasks", params: { status: "overdue" } }
+        : { pathname: "/(employee)/(tabs)/my-tasks", params: { status: "overdue" } },
+    );
+  } else if (referenceType === "PERFORMANCE_AWARD") {
+    // The award shows as the top-performers popup, which appears once its pending list refreshes.
+    void queryClient.invalidateQueries({ queryKey: awardKeys.pending() });
   }
+}
+
+/**
+ * The push's data from a tapped notification. Local notifications (shown while the app was open)
+ * carry it in `content.data`; on iOS a remote push tapped through expo-notifications carries it in
+ * the trigger's `payload` instead.
+ */
+function dataFromNotificationResponse(response: ExpoNotifications.NotificationResponse): NotificationData {
+  const { content, trigger } = response.notification.request;
+  if (content.data && typeof content.data.referenceId === "string") return content.data;
+  if (trigger && typeof trigger === "object" && "payload" in trigger && trigger.payload) return trigger.payload;
+  return content.data ?? undefined;
 }
 
 /**
@@ -201,6 +243,7 @@ function navigateToNotificationTarget(message: RemoteMessage): void {
 function refreshAfterPush(): void {
   void queryClient.invalidateQueries({ queryKey: taskKeys.all });
   void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+  void queryClient.invalidateQueries({ queryKey: awardKeys.pending() });
   void useNotificationStore.getState().fetchAll();
 }
 
@@ -221,103 +264,6 @@ async function showForegroundNotification(message: RemoteMessage): Promise<void>
         ? { channelId: reminder ? ANDROID_REMINDER_CHANNEL_ID : ANDROID_NOTIFICATION_CHANNEL_ID }
         : null,
   });
-}
-
-/**
- * DEBUG ONLY: schedules a local notification with fake content, completely bypassing FCM
- * registration/delivery. Use this to isolate whether the problem is "push never arrives"
- * (registration/backend/FCM) vs. "push arrives but nothing shows" (permission/channel/display) —
- * if this doesn't show up with sound, the bug is in the local display path below, not in FCM.
- */
-export async function sendMockPushNotification(): Promise<void> {
-  if (!notifications) {
-    Alert.alert(
-      "Not supported in Expo Go",
-      "Android notifications require a dev-client build since Expo SDK 53 removed this from Expo Go. Run the app from your development build instead."
-    );
-    return;
-  }
-
-  await ensureAndroidChannel();
-  await notifications.scheduleNotificationAsync({
-    content: {
-      title: "Test notification",
-      body: "This is mock data — if you see and hear this, local display works fine.",
-      sound: true,
-      data: { mock: true },
-    },
-    trigger: Platform.OS === "android" ? { channelId: ANDROID_NOTIFICATION_CHANNEL_ID } : null,
-  });
-}
-
-/**
- * DEBUG ONLY: shows a local notification exactly like a TASK_REMINDER push, 5 seconds
- * from now — lock the phone or background the app to hear the alarm as users will.
- */
-export async function sendMockReminderNotification(): Promise<void> {
-  if (TaskAlarm.isAvailable) {
-    if (!TaskAlarm.canUseFullScreenIntent()) {
-      Alert.alert(
-        "Allow full-screen alarms",
-        "Turn on full-screen notifications for this app so reminders can show over the lock screen.",
-        [
-          { text: "Not now", style: "cancel" },
-          { text: "Open settings", onPress: () => TaskAlarm.openFullScreenIntentSettings() },
-        ],
-      );
-    }
-    // Lock the phone within 5 seconds to see it over the lock screen.
-    setTimeout(() => {
-      TaskAlarm.ring("Task reminder", "Test alarm — this is how a due reminder will ring.", null);
-    }, 5_000);
-    return;
-  }
-
-  if (!notifications) {
-    Alert.alert("Not supported in Expo Go", "Reminder sounds need a development build.");
-    return;
-  }
-
-  await ensureAndroidChannel();
-  await notifications.scheduleNotificationAsync({
-    content: {
-      title: "Task reminder",
-      body: "Test alarm — this is how a due reminder will sound.",
-      sound: REMINDER_NOTIFICATION_SOUND,
-      interruptionLevel: "timeSensitive",
-      data: { mock: true, type: REMINDER_NOTIFICATION_TYPE },
-    },
-    trigger: {
-      type: notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 5,
-      ...(Platform.OS === "android" ? { channelId: ANDROID_REMINDER_CHANNEL_ID } : {}),
-    },
-  });
-}
-
-/**
- * DEBUG ONLY: fetches the raw FCM token and shows it, bypassing permission checks, the
- * Android channel setup, and the backend registration call. Use this to isolate whether
- * `getToken()` itself works on this device — if this hangs or throws, the problem is
- * Firebase/Google Play Services, not our registration or backend code.
- */
-export async function debugGetFcmToken(): Promise<void> {
-  if (!messagingInstance) {
-    Alert.alert("FCM debug", "messagingInstance is null (Expo Go, or native Firebase module unavailable on this build).");
-    return;
-  }
-
-  try {
-    const messagingModule = require("@react-native-firebase/messaging");
-    debugLog("[PushDebug] debugGetFcmToken: requesting token directly...");
-    const token = await messagingModule.getToken(messagingInstance);
-    debugLog(`[PushDebug] debugGetFcmToken: got token: ${token}`);
-    Alert.alert("FCM token", token);
-  } catch (error) {
-    console.warn("[PushDebug] debugGetFcmToken failed", error);
-    const message = error instanceof Error ? error.message : JSON.stringify(error);
-    Alert.alert("FCM debug: getToken failed", message);
-  }
 }
 
 async function syncDeviceToken(token: string): Promise<void> {
@@ -346,6 +292,9 @@ export function startPushListeners(): () => void {
   const unsubMessage = messagingModule.onMessage(messagingInstance, (message: RemoteMessage) => {
     refreshAfterPush();
     if (ringReminderAlarm(message)) return;
+    // iOS already shows pushes while the app is open (firebase.json foreground presentation
+    // options, and the setNotificationHandler above), so a local copy would be a second banner.
+    if (Platform.OS === "ios") return;
     void showForegroundNotification(message);
   });
 
@@ -353,9 +302,16 @@ export function startPushListeners(): () => void {
     messagingInstance,
     (message: RemoteMessage) => {
       refreshAfterPush();
-      navigateToNotificationTarget(message);
+      navigateToNotificationTarget(message.data);
     }
   );
+
+  // Taps on notifications shown while the app was open (the local copies above, and iOS
+  // foreground pushes) don't reach onNotificationOpenedApp, so handle them here too.
+  const responseSubscription = notifications?.addNotificationResponseReceivedListener((response) => {
+    refreshAfterPush();
+    navigateToNotificationTarget(dataFromNotificationResponse(response));
+  });
 
   const unsubTokenRefresh = messagingModule.onTokenRefresh(
     messagingInstance,
@@ -369,6 +325,7 @@ export function startPushListeners(): () => void {
     unsubMessage();
     unsubOpened();
     unsubTokenRefresh();
+    responseSubscription?.remove();
   };
 }
 
@@ -379,7 +336,7 @@ export async function consumeInitialNotification(): Promise<void> {
   const messagingModule = require("@react-native-firebase/messaging");
   const message = await messagingModule.getInitialNotification(messagingInstance);
   if (message) {
-    navigateToNotificationTarget(message);
+    navigateToNotificationTarget(message.data);
   }
 }
 

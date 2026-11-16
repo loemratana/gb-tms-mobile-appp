@@ -25,6 +25,10 @@ export type TaskSubmissionResponse = {
   /** 1 for the first submission, then 2, 3… after each rejection. */
   round: number;
   note: string | null;
+  /** Submitted after the task's due date (snapshot taken at submit time). */
+  late?: boolean;
+  /** The submitter's explanation; set when `late` is true. */
+  lateReason?: string | null;
   status: SubmissionStatus;
   submittedById: string;
   submittedByName: string;
@@ -46,6 +50,8 @@ export type SubmissionUploadFile = {
 
 export type SubmitWorkRequest = {
   note?: string;
+  /** Required by the API when the task is past its due date; ignored otherwise. */
+  lateReason?: string;
   images: SubmissionUploadFile[];
   files: SubmissionUploadFile[];
 };
@@ -69,5 +75,6 @@ export const SUBMISSION_LIMITS = {
   maxImages: 10,
   maxFiles: 10,
   maxNoteLength: 5000,
+  maxLateReasonLength: 1000,
   maxReviewCommentLength: 2000,
 } as const;

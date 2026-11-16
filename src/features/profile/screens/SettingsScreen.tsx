@@ -16,7 +16,6 @@ import { SettingsGroup, SettingsRow } from "@/features/profile/components/Settin
 import { useNotificationPermission } from "@/features/profile/hooks/useNotificationPermission";
 import { useSignOutConfirmation } from "@/features/profile/hooks/useSignOutConfirmation";
 import type { NotificationPermissionStatus } from "@/lib/pushNotifications";
-import { debugGetFcmToken, sendMockPushNotification, sendMockReminderNotification } from "@/lib/pushNotifications";
 
 const APP_VERSION = Constants.expoConfig?.version ?? "—";
 
@@ -50,7 +49,7 @@ export default function SettingsScreen() {
 
         <SettingsGroup
           title="Notifications"
-          footer="Task assignments, reviews and reminders are sent as push notifications."
+          footer="Task assignments, reviews and reminders are sent as push notifications. To set a reminder, open a task and tap the alarm icon."
         >
           <SettingsRow
             icon="notifications-outline"
@@ -59,14 +58,6 @@ export default function SettingsScreen() {
             valueTone={permission?.tone ?? "default"}
             accessibilityHint={permission?.hint}
             onPress={canOpenNotificationSettings ? () => void notificationPermission.openSettings() : undefined}
-          />
-        </SettingsGroup>
-
-        <SettingsGroup title="Task reminders">
-          <SettingsRow
-            icon="alarm-outline"
-            label="Reminders are set per task"
-            description="Open a task and tap the alarm icon to choose when you're reminded. Reminders need push notifications on."
           />
         </SettingsGroup>
 
@@ -82,14 +73,6 @@ export default function SettingsScreen() {
         <SettingsGroup title="About">
           <SettingsRow icon="information-circle-outline" label="Version" value={APP_VERSION} />
         </SettingsGroup>
-
-        {__DEV__ ? (
-          <SettingsGroup title="Developer" footer="Only visible in development builds.">
-            <SettingsRow icon="paper-plane-outline" label="Send test notification" onPress={() => void sendMockPushNotification()} />
-            <SettingsRow icon="alarm-outline" label="Test reminder alarm (in 5s)" onPress={() => void sendMockReminderNotification()} />
-            <SettingsRow icon="key-outline" label="Show FCM token" onPress={() => void debugGetFcmToken()} />
-          </SettingsGroup>
-        ) : null}
       </ScrollView>
 
       <EditProfileBottomSheet ref={editSheetRef} />

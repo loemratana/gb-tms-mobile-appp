@@ -1,4 +1,5 @@
-import { Alert, Linking } from "react-native";
+import { Linking } from "react-native";
+import { toast } from "@/stores/toastStore";
 
 async function openContactUrl(url: string, fallbackMessage: string): Promise<void> {
   // No canOpenURL pre-check: on Android 11+ and iOS it returns false unless the scheme is
@@ -6,7 +7,7 @@ async function openContactUrl(url: string, fallbackMessage: string): Promise<voi
   try {
     await Linking.openURL(url);
   } catch {
-    Alert.alert("Unavailable", fallbackMessage);
+    toast.error("Unavailable", fallbackMessage);
   }
 }
 

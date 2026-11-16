@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Alert } from "react-native";
+
 
 import { getMeetingCheckInCodePath, getMeetingScanPath } from "@/features/auth/utils/navigation";
 import { useAttendance, useMarkAttendance } from "@/features/meetings/hooks/useAttendance";
@@ -7,6 +7,7 @@ import type { AttendanceEntry, AttendanceStatus } from "@/features/meetings/type
 import { useCurrentUser } from "@/features/users/hooks/useUsers";
 import { getApiErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "@/stores/toastStore";
 
 /** Attendance on the meeting detail: counts, my status, check-in / QR actions and the organizer checklist. */
 export function useMeetingAttendance(bookingId: string) {
@@ -28,7 +29,7 @@ export function useMeetingAttendance(bookingId: string) {
     const next: AttendanceStatus = entry.status === status ? "UNKNOWN" : status;
     markMutation.mutate(
       { userId: entry.user.id, status: next },
-      { onError: (error) => Alert.alert("Couldn't update attendance", getApiErrorMessage(error)) },
+      { onError: (error) => toast.error("Couldn't update attendance", getApiErrorMessage(error)) },
     );
   };
 

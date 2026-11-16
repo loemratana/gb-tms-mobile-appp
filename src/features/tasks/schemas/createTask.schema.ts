@@ -1,89 +1,57 @@
 import { z } from "zod";
 
-export const SCHEDULE_OPTIONS = [
-  { id: "date" as const, label: "Date Range" },
-  { id: "time" as const, label: "Time Range" },
-  { id: "both" as const, label: "Date & Time" },
-];
+import { toDateKey } from "@/features/calendar/utils/calendarDates";
 
-export type ScheduleType = (typeof SCHEDULE_OPTIONS)[number]["id"];
-
-export function refineSchedule(
-  data: {
-    scheduleType: ScheduleType;
-    startDate?: string;
-    endDate?: string;
-    startTime?: string;
-    endTime?: string;
-  },
-  ctx: z.RefinementCtx,
-  pathPrefix: (string | number)[] = [],
-) {
-  const issuePath = (field: string) => [...pathPrefix, field];
-  const needsDate = data.scheduleType === "date" || data.scheduleType === "both";
-  const needsTime = data.scheduleType === "time" || data.scheduleType === "both";
-
-  if (needsDate) {
-    if (!data.startDate) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Start date is required",
-        path: issuePath("startDate"),
-      });
-    }
-    if (!data.endDate) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End date is required",
-        path: issuePath("endDate"),
-      });
-    }
-    if (data.startDate && data.endDate && data.endDate < data.startDate) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End date must be on or after start date",
-        path: issuePath("endDate"),
-      });
-    }
-  }
-
-  if (needsTime) {
-    if (!data.startTime) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Start time is required",
-        path: issuePath("startTime"),
-      });
-    }
-    if (!data.endTime) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End time is required",
-        path: issuePath("endTime"),
-      });
-    }
-    if (data.startTime && data.endTime && data.endTime <= data.startTime) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End time must be after start time",
-        path: issuePath("endTime"),
-      });
-    }
-  }
-}
+/**
+ * Mirrors the API's CreateTaskRequest: the task only has date-only `startDate` and `dueDate`
+ * (no times), and both must be today or later (@FutureOrPresent).
+ */
+export const TASK_TITLE_MAX_LENGTH = 200;
+export const TASK_DESCRIPTION_MAX_LENGTH = 5000;
 
 export const createTaskSchema = z
   .object({
-    title: z.string().trim().min(3, "Title must be at least 3 characters"),
-    description: z.string().trim().min(5, "Add a short description"),
+    title: z
+      .string()
+      .trim()
+      .min(3, "Title must be at least 3 characters")
+      .max(TASK_TITLE_MAX_LENGTH, `Keep the title under ${TASK_TITLE_MAX_LENGTH} characters`),
+    /** Optional: a short title is often enough ("Call the supplier"). */
+    description: z
+      .string()
+      .trim()
+      .max(TASK_DESCRIPTION_MAX_LENGTH, `Keep the description under ${TASK_DESCRIPTION_MAX_LENGTH} characters`),
     priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
-    assignees: z.array(z.string()).min(1, "Select at least one assignee"),
-    scheduleType: z.enum(["date", "time", "both"]),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    startTime: z.string().optional(),
-    endTime: z.string().optional(),
+    /**
+     * Who gets the task. PEOPLE = the picked `assignees`; DEPARTMENT = everyone in the chosen
+     * department; POSITION = everyone holding `positionId`. Only admins see the last two.
+     */
+    assignTo: z.enum(["PEOPLE", "DEPARTMENT", "POSITION"]),
+    assignees: z.array(z.string()),
+    positionId: z.string().optional(),
+    /** Only used with two or more assignees. */
+    assignmentMode: z.enum(["INDIVIDUAL", "SHARED"]),
+    startDate: z.string().min(1, "Start date is required"),
+    dueDate: z.string().min(1, "Due date is required"),
   })
-  .superRefine((data, ctx) => refineSchedule(data, ctx));
+  .superRefine((data, ctx) => {
+    // "YYYY-MM-DD" strings compare correctly as plain text.
+    if (data.assignTo === "PEOPLE" && data.assignees.length === 0) {
+      ctx.addIssue({ code: "custom", message: "Select at least one assignee", path: ["assignees"] });
+    }
+    if (data.assignTo === "POSITION" && !data.positionId) {
+      ctx.addIssue({ code: "custom", message: "Choose a position", path: ["positionId"] });
+    }
+    const today = toDateKey(new Date());
+    if (data.startDate && data.startDate < today) {
+      ctx.addIssue({ code: "custom", message: "Start date can't be in the past", path: ["startDate"] });
+    }
+    if (data.dueDate && data.dueDate < today) {
+      ctx.addIssue({ code: "custom", message: "Due date can't be in the past", path: ["dueDate"] });
+    }
+    if (data.startDate && data.dueDate && data.dueDate < data.startDate) {
+      ctx.addIssue({ code: "custom", message: "Due date must be on or after the start date", path: ["dueDate"] });
+    }
+  });
 
 export type CreateTaskFormValues = z.infer<typeof createTaskSchema>;

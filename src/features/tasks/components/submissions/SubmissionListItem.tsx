@@ -48,8 +48,17 @@ export function SubmissionListItem({
         {formatSubmissionDateTime(submission.submittedAt)}
       </Text>
 
+      {submission.late ? (
+        <View className="mt-2 flex-row items-start gap-1.5 rounded-xl bg-error-subtle px-3 py-2">
+          <Ionicons name="alert-circle" size={14} color={palette.red[600]} style={{ marginTop: 2 }} />
+          <Text className="flex-1 text-label text-error-fg" numberOfLines={2}>
+            Late{submission.lateReason ? `: ${submission.lateReason}` : ""}
+          </Text>
+        </View>
+      ) : null}
+
       {submission.note ? (
-        <Text className="mt-2 text-caption leading-5 text-fg-sub" numberOfLines={2}>
+        <Text className="mt-2 text-caption text-fg-sub" numberOfLines={2}>
           {submission.note}
         </Text>
       ) : null}
@@ -68,7 +77,7 @@ export function SubmissionListItem({
 
       {submission.status === "REJECTED" && submission.reviewComment ? (
         <View className="mt-3 rounded-xl bg-error-subtle px-3 py-2">
-          <Text className="text-label leading-5 text-error-fg" numberOfLines={3}>
+          <Text className="text-label text-error-fg" numberOfLines={3}>
             {submission.reviewedByName ?? "Reviewer"}: “{submission.reviewComment}”
           </Text>
         </View>

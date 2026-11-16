@@ -1,5 +1,10 @@
 
+const plugin = require("tailwindcss/plugin");
+
 const tokens = require("./src/styles/tokens.json");
+
+/** Must match APP_FONT_FAMILY in src/styles/typography.ts (the family loaded in src/config/fonts.ts). */
+const APP_FONT_FAMILY = "Kantumruy Pro";
 
 const px = (value) => `${value}px`;
 
@@ -51,8 +56,8 @@ module.exports = {
       },
 
       fontFamily: {
-        sans: ["System"],
-        khmer: ["Kantumruy Pro"],
+        sans: [APP_FONT_FAMILY],
+        khmer: [APP_FONT_FAMILY],
       },
 
       boxShadow: {
@@ -62,5 +67,15 @@ module.exports = {
     },
   },
 
-  plugins: [],
+  plugins: [
+    // React Native has no global default font, so every type-scale class (text-body, text-caption…)
+    // also sets the app font. Nearly all text uses one; the rest add `font-sans`.
+    plugin(({ addUtilities }) => {
+      addUtilities(
+        Object.fromEntries(
+          Object.keys(tokens.fontSize).map((name) => [`.text-${name}`, { fontFamily: APP_FONT_FAMILY }]),
+        ),
+      );
+    }),
+  ],
 };

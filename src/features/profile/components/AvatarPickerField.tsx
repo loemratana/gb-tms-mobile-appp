@@ -1,8 +1,9 @@
 import * as ImagePicker from "expo-image-picker";
-import { Alert, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { toast } from "@/stores/toastStore";
 
 type AvatarPickerFieldProps = {
   /** Current photo uri; empty when the user has none. */
@@ -17,7 +18,7 @@ export function AvatarPickerField({ uri, name, onChange, error }: AvatarPickerFi
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to change your profile picture.");
+      toast.warning("Permission needed", "Allow photo library access to change your profile picture.");
       return;
     }
 

@@ -1,13 +1,13 @@
 import { useState } from "react";
 
-import type { SegmentOption } from "@/components/ui/SegmentedControl";
+import type { TeamScopeOption } from "@/features/team/components/TeamScopeTabs";
 import type { TeamScope } from "@/features/team/hooks/useTeamRoster";
 
 import TeamScreen from "./TeamScreen";
 
-const MANAGER_SCOPE_OPTIONS: SegmentOption<TeamScope>[] = [
-  { value: "directReports", label: "Direct reports" },
-  { value: "department", label: "Department" },
+const MANAGER_SCOPE_OPTIONS: TeamScopeOption[] = [
+  { value: "directReports", label: "Direct reports", icon: "git-network-outline" },
+  { value: "department", label: "Department", icon: "business-outline" },
 ];
 
 /**

@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Image, Platform, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 import {
   getLatestWorkActivity,
@@ -11,16 +11,6 @@ import {
 } from "@/features/tasks/utils/task.utils";
 import type { Task, TaskSubtaskSummary } from "@/features/tasks/types/taskView.types";
 import { colors, palette } from "@/styles";
-
-const CARD_SHADOW = Platform.select({
-  ios: {
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-  },
-  android: { elevation: 2 },
-});
 
 type SubtaskWorkListProps = {
   subtasks: TaskSubtaskSummary[];
@@ -50,8 +40,8 @@ export function SubtaskWorkList({
         </Text>
       </View>
 
-      <View className="gap-2">
-        {subtasks.map((subtask) => {
+      <View>
+        {subtasks.map((subtask, index) => {
           const fullTask = getSubtaskFullTask(allTasks, subtask.id);
           const latestWork = fullTask ? getLatestWorkActivity(fullTask) : undefined;
           const workProgress = getSubtaskWorkProgress(subtask);
@@ -62,8 +52,7 @@ export function SubtaskWorkList({
               key={subtask.id}
               onPress={() => onSubtaskPress?.(subtask.id)}
               disabled={!onSubtaskPress}
-              className="rounded-2xl border border-line bg-field px-3.5 py-3"
-              style={CARD_SHADOW}
+              className={`py-3 active:opacity-70 ${index > 0 ? "border-t border-line-soft" : ""}`}
               accessibilityRole="button"
               accessibilityLabel={`View work for ${subtask.title}`}
             >
@@ -108,7 +97,7 @@ export function SubtaskWorkList({
                 />
               </View>
 
-              <View className="mt-2 flex-row items-start gap-2 rounded-xl bg-surface px-3 py-2">
+              <View className="mt-2 flex-row items-start gap-2 rounded-xl bg-field px-3 py-2">
                 <Ionicons name="attach" size={14} color={palette.violet[500]} />
                 <View className="min-w-0 flex-1">
                   {latestWork ? (

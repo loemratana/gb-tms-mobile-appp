@@ -1,8 +1,9 @@
 import type Ionicons from "@expo/vector-icons/Ionicons";
 import type { ComponentProps } from "react";
-import { Alert, Linking } from "react-native";
+import { Linking } from "react-native";
 
 import type { BookingResponse, MeetingLocationType } from "@/features/meetings/types/meeting.types";
+import { toast } from "@/stores/toastStore";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -126,7 +127,7 @@ export async function openLocationUrl(url: string): Promise<void> {
   try {
     await Linking.openURL(url);
   } catch {
-    Alert.alert("Unavailable", "Couldn't open this link on your device.");
+    toast.error("Unavailable", "Couldn't open this link on your device.");
   }
 }
 

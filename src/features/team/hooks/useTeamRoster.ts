@@ -61,18 +61,22 @@ export function useTeamRoster(scope: TeamScope = "department"): TeamRoster {
 
   const team: TeamRosterInfo = isReportsScope
     ? {
-        department: "My direct reports",
-        description: department?.name ?? null,
+        kind: "directReports",
+        title: "Reporting to you",
+        description: department?.name ? `In ${department.name}` : null,
         memberCount: members.length,
-        managerName: me?.fullName ?? "You",
-        managerAvatarUrl: me?.avatarUrl ?? null,
+        leadName: me?.fullName ?? "You",
+        leadAvatarUrl: me?.avatarUrl ?? null,
+        isLeadYou: true,
       }
     : {
-        department: department?.name ?? "Your team",
+        kind: "department",
+        title: department?.name ?? "Your team",
         description: department?.description ?? null,
         memberCount: members.length,
-        managerName: department?.manager?.name ?? "Unassigned",
-        managerAvatarUrl: members.find((member) => member.isManager)?.avatarUrl ?? null,
+        leadName: department?.manager?.name ?? "Not assigned",
+        leadAvatarUrl: members.find((member) => member.isManager)?.avatarUrl ?? null,
+        isLeadYou: Boolean(managerId && managerId === me?.id),
       };
 
   let status: TeamRosterStatus = "ready";

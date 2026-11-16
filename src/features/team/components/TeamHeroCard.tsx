@@ -3,85 +3,73 @@ import { Text, View } from "react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import type { TeamRosterInfo } from "@/features/team/types/team.types";
-import { colors } from "@/styles";
+import { palette } from "@/styles";
 
 type TeamHeroCardProps = {
   team: TeamRosterInfo;
 };
 
-/** Minimalist hero card showing department details, total team size, and manager. */
+/**
+ * The group being listed: a department (name, what it does, its manager) or the viewer's direct
+ * reports. Identity on top; who leads it and how many people are in it underneath.
+ */
 export function TeamHeroCard({ team }: TeamHeroCardProps) {
+  const isDepartment = team.kind === "department";
+  const countLabel = isDepartment
+    ? team.memberCount === 1 ? "Member" : "Members"
+    : team.memberCount === 1 ? "Report" : "Reports";
+
   return (
-    <View className="mx-4 rounded-2xl border border-line bg-surface p-4">
-      {/* Department Title & Icon */}
-      <View className="flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-xl bg-brand-subtle">
+    <View className="mx-4 overflow-hidden rounded-2xl border border-line bg-surface">
+      <View className="flex-row items-start gap-3.5 p-4">
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand">
           <Ionicons
-            name="business-outline"
-            size={20}
-            color={colors.brandStrong}
+            name={isDepartment ? "business" : "git-network-outline"}
+            size={22}
+            color={palette.white}
           />
         </View>
 
         <View className="min-w-0 flex-1">
           <Text className="text-micro font-semibold uppercase tracking-wider text-brand-strong">
-            Department
+            {isDepartment ? "Department" : "Direct reports"}
           </Text>
-          <Text
-            className="text-title font-bold text-fg"
-            numberOfLines={1}
-          >
-            {team.department}
+          <Text className="mt-0.5 text-title font-bold text-fg" numberOfLines={2} accessibilityRole="header">
+            {team.title}
           </Text>
+          {team.description ? (
+            <Text className="mt-1 text-caption text-fg-soft" numberOfLines={2}>
+              {team.description}
+            </Text>
+          ) : null}
         </View>
       </View>
 
-      {team.description ? (
-        <Text
-          className="mt-2 text-caption text-fg-soft"
-          numberOfLines={2}
+      <View className="flex-row border-t border-line-soft">
+        <View
+          className="min-w-0 flex-1 flex-row items-center gap-2.5 px-4 py-3"
+          accessible
+          accessibilityLabel={`Manager: ${team.leadName}${team.isLeadYou ? ", you" : ""}`}
         >
-          {team.description}
-        </Text>
-      ) : null}
-
-      {/* Stats & Manager Bar */}
-      <View className="mt-3.5 flex-row items-center justify-between rounded-xl border border-line-soft bg-field px-3.5 py-2.5">
-        {/* Member count */}
-        <View className="flex-row items-center gap-2">
-          <Ionicons
-            name="people-outline"
-            size={18}
-            color={colors.textMuted}
-          />
-          <View className="flex-row items-baseline gap-1.5">
-            <Text className="text-body font-bold text-fg">
-              {team.memberCount}
-            </Text>
-            <Text className="text-caption text-fg-soft">
-              {team.memberCount === 1 ? "member" : "members"}
+          <Avatar name={team.leadName} imageUrl={team.leadAvatarUrl} size={36} />
+          <View className="min-w-0 flex-1">
+            <Text className="text-micro text-fg-faint">Manager</Text>
+            <Text className="text-body-sm font-semibold text-fg" numberOfLines={1}>
+              {team.leadName}
+              {team.isLeadYou ? <Text className="font-normal text-brand-strong"> · You</Text> : null}
             </Text>
           </View>
         </View>
 
-        <View className="h-4 w-px bg-line" />
+        <View className="w-px bg-line-soft" />
 
-        {/* Manager */}
-        <View className="flex-row items-center gap-2">
-          <Avatar
-            name={team.managerName}
-            imageUrl={team.managerAvatarUrl}
-            size={28}
-          />
-          <View className="min-w-0">
-            <Text className="text-micro text-fg-faint">Manager</Text>
-            <Text
-              className="max-w-[130px] text-body-sm font-semibold text-fg"
-              numberOfLines={1}
-            >
-              {team.managerName}
-            </Text>
-          </View>
+        <View
+          className="min-w-[88px] items-center justify-center px-4 py-3"
+          accessible
+          accessibilityLabel={`${team.memberCount} ${countLabel.toLowerCase()}`}
+        >
+          <Text className="text-title font-bold text-fg">{team.memberCount}</Text>
+          <Text className="text-micro text-fg-faint">{countLabel}</Text>
         </View>
       </View>
     </View>

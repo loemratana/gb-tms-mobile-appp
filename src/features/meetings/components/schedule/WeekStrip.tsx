@@ -9,7 +9,7 @@ type WeekStripProps = {
   onSelectDate: (date: Date) => void;
 };
 
-/** Sun–Sat row of round day buttons with previous / next week arrows. */
+/** Mon–Sun row of round day buttons with previous / next week arrows. */
 export function WeekStrip({ weekDays, selectedDate, onSelectDate }: WeekStripProps) {
   const today = new Date();
 

@@ -10,6 +10,7 @@ import { useRoomMutations } from "@/features/meetings/hooks/useRoomMutations";
 import { roomFormSchema, type RoomFormValues } from "@/features/meetings/schemas/roomForm.schema";
 import type { RoomFacility, RoomImageUpload, RoomRequest, RoomResponse, RoomStatus } from "@/features/meetings/types/meeting.types";
 import { getApiErrorMessage } from "@/lib/api";
+import { toast } from "@/stores/toastStore";
 
 /** Server limits (app.booking.max-images-per-room / max-image-size-bytes). */
 export const ROOM_MAX_IMAGES = 10;
@@ -81,7 +82,7 @@ export function useRoomEditor(room: RoomResponse | undefined) {
           const created = await mutations.create.mutateAsync(toRequest(values));
           // Photos can only be attached to a saved room, so continue in its editor.
           router.replace(getRoomEditorPath(created.id));
-          Alert.alert("Room created", `"${created.name}" is ready. Add a few photos so people recognise it.`);
+          toast.success("Room created", `"${created.name}" is ready. Add a few photos so people recognise it.`);
           return;
         }
         const saved = await mutations.update.mutateAsync({ id: roomId, input: toRequest(values) });
@@ -90,7 +91,7 @@ export function useRoomEditor(room: RoomResponse | undefined) {
           Alert.alert("Room saved — check these bookings", saved.warnings.join("\n\n"));
         }
       } catch (error) {
-        Alert.alert("Couldn't save the room", getApiErrorMessage(error));
+        toast.error("Couldn't save the room", getApiErrorMessage(error));
       }
     })();
   }, [handleSubmit, roomId, mutations.create, mutations.update, router]);
@@ -122,12 +123,12 @@ export function useRoomEditor(room: RoomResponse | undefined) {
   const addPhotos = async () => {
     if (!roomId) return;
     if (remainingImages <= 0) {
-      Alert.alert("Photo limit reached", `A room can have at most ${ROOM_MAX_IMAGES} photos. Delete one to add another.`);
+      toast.warning("Photo limit reached", `A room can have at most ${ROOM_MAX_IMAGES} photos. Delete one to add another.`);
       return;
     }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to add room photos.");
+      toast.warning("Permission needed", "Allow photo library access to add room photos.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -142,13 +143,13 @@ export function useRoomEditor(room: RoomResponse | undefined) {
     const tooLarge = assets.filter((asset) => (asset.fileSize ?? 0) > ROOM_MAX_IMAGE_BYTES);
     const files = assets.filter((asset) => !tooLarge.includes(asset)).map(toUpload);
     if (tooLarge.length > 0) {
-      Alert.alert("Some photos are too large", `${tooLarge.length} photo(s) are over 5 MB and were skipped.`);
+      toast.warning("Some photos are too large", `${tooLarge.length} photo(s) are over 5 MB and were skipped.`);
     }
     if (files.length === 0) return;
 
     mutations.uploadImages.mutate(
       { roomId, files },
-      { onError: (error) => Alert.alert("Couldn't upload photos", getApiErrorMessage(error)) },
+      { onError: (error) => toast.error("Couldn't upload photos", getApiErrorMessage(error)) },
     );
   };
 
@@ -156,7 +157,7 @@ export function useRoomEditor(room: RoomResponse | undefined) {
     if (!roomId) return;
     mutations.setCover.mutate(
       { roomId, imageId },
-      { onError: (error) => Alert.alert("Couldn't change the cover", getApiErrorMessage(error)) },
+      { onError: (error) => toast.error("Couldn't change the cover", getApiErrorMessage(error)) },
     );
   };
 
@@ -170,7 +171,7 @@ export function useRoomEditor(room: RoomResponse | undefined) {
     [ids[from], ids[to]] = [ids[to], ids[from]];
     mutations.reorderImages.mutate(
       { roomId: room.id, imageIds: ids },
-      { onError: (error) => Alert.alert("Couldn't reorder photos", getApiErrorMessage(error)) },
+      { onError: (error) => toast.error("Couldn't reorder photos", getApiErrorMessage(error)) },
     );
   };
 

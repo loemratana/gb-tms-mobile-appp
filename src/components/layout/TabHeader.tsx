@@ -37,7 +37,7 @@ export function TabHeader(props: TabHeaderProps) {
             role={role}
           />
         ) : (
-          <Text className="text-[20px] font-bold text-fg">
+          <Text className="font-sans text-[20px] font-bold text-fg">
             {props.title}
           </Text>
         )}

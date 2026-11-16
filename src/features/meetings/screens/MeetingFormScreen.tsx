@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
 import { StateView } from "@/components/ui/StateView";
 import { BookingPreviewNotice } from "@/features/meetings/components/form/BookingPreviewNotice";
-import { FormField as Field } from "@/features/meetings/components/form/FormField";
+import { FormField as Field } from "@/components/ui/FormField";
 import { FormSelectField } from "@/features/meetings/components/form/FormSelectField";
 import { MeetingLocationFields } from "@/features/meetings/components/form/MeetingLocationFields";
 import { MemberList } from "@/features/meetings/components/form/MemberList";
@@ -19,6 +19,7 @@ import { RoomPickerModal } from "@/features/meetings/components/form/RoomPickerM
 import { useMeeting } from "@/features/meetings/hooks/useMeetings";
 import { useMeetingForm, type MeetingFormParams } from "@/features/meetings/hooks/useMeetingForm";
 import type { BookingResponse } from "@/features/meetings/types/meeting.types";
+import { countTargets } from "@/features/meetings/utils/memberDirectory";
 import { formatDateKey } from "@/features/meetings/utils/meetingTime";
 import { SchedulePickerOverlay } from "@/features/tasks/hooks/useTaskSchedulePicker";
 import { getApiErrorMessage } from "@/lib/api";
@@ -68,6 +69,8 @@ function MeetingForm({ params, booking }: { params: MeetingFormParams; booking?:
 
   const title = form.isEdit ? "Edit Meeting" : "New Meeting";
   const { values, errors } = form;
+
+  const selectedCount = countTargets(values.targets);
 
   const removeTarget = (key: "departmentIds" | "positionIds" | "userIds", id: string) =>
     form.setTargets({ ...values.targets, [key]: values.targets[key].filter((item) => item !== id) });
@@ -150,7 +153,7 @@ function MeetingForm({ params, booking }: { params: MeetingFormParams; booking?:
           />
 
           <Field
-            label="Members"
+            label={selectedCount > 0 ? `Members · ${selectedCount} selected` : "Members"}
             action={
               <Pressable
                 onPress={() => setMemberPickerOpen(true)}
@@ -172,7 +175,12 @@ function MeetingForm({ params, booking }: { params: MeetingFormParams; booking?:
             />
           </Field>
 
-          <Field label="Description (optional)" error={errors.description?.message}>
+          {/* Right after the fields it checks: time, room and who is invited. */}
+          <View className="mt-4">
+            <BookingPreviewNotice preview={form.preview} isLoading={form.isPreviewing} />
+          </View>
+
+          <Field label="Description" isOptional error={errors.description?.message}>
             <Controller
               control={form.control}
               name="description"
@@ -184,14 +192,11 @@ function MeetingForm({ params, booking }: { params: MeetingFormParams; booking?:
                   placeholder="Agenda, links, what to prepare…"
                   multiline
                   accessibilityLabel="Description"
+                  maxLength={5000}
                 />
               )}
             />
           </Field>
-
-          <View className="mt-4">
-            <BookingPreviewNotice preview={form.preview} isLoading={form.isPreviewing} />
-          </View>
         </ScrollView>
 
         <View className="border-t border-line bg-surface px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
@@ -199,9 +204,9 @@ function MeetingForm({ params, booking }: { params: MeetingFormParams; booking?:
             <Text className="mb-2 text-center text-caption text-error">{form.blockingReason}</Text>
           ) : null}
           <Button
-            label={form.isEdit ? "Save changes" : "Create"}
+            label={form.isEdit ? (form.isDirty ? "Save changes" : "No changes") : "Create meeting"}
             isLoading={form.isSubmitting}
-            disabled={Boolean(form.blockingReason)}
+            disabled={Boolean(form.blockingReason) || (form.isEdit && !form.isDirty)}
             onPress={form.submit}
           />
         </View>

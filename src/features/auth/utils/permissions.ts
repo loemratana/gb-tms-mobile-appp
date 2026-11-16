@@ -43,6 +43,29 @@ export function canAssignTasks(user: UserResponse | undefined | null): boolean {
 }
 
 /**
+ * True when `viewer` may open `targetUserId`'s detailed performance (GET /users/{id}/performance):
+ * their own, or anyone's with `users:view` — the server's rule. Teammates' star ratings
+ * (the leaderboard) are open to everyone and don't need this.
+ * Older API versions don't send `permissions`; then fall back to ADMIN/MANAGER.
+ */
+export function canViewUserPerformance(
+  viewer: UserResponse | undefined | null,
+  targetUserId: string | undefined,
+): boolean {
+  if (!viewer || !targetUserId) {
+    return false;
+  }
+  if (viewer.id === targetUserId) {
+    return true;
+  }
+  if (viewer.permissions) {
+    return viewer.permissions.includes("users:view");
+  }
+  const roleNames = [...(viewer.roles ?? []), ...(viewer.role ? [viewer.role] : [])];
+  return roleNames.some((role) => ASSIGNING_ROLES.has(role.name.toUpperCase()));
+}
+
+/**
  * True when the user can book meeting rooms (`bookings:create`). Who they may invite is
  * checked by the server (bookings:invite:* scopes), which rejects out-of-scope targets.
  * Older API versions don't send `permissions`; then fall back to ADMIN/MANAGER.

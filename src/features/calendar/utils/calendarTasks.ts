@@ -1,6 +1,8 @@
-import { addDays, formatWeekDividerLabel, parseDateKey, toDateKey } from "./calendarDates";
-import { apiTaskStatusTone, toneColors, type Tone } from "@/styles";
+import type { BookingResponse } from "@/features/meetings/types/meeting.types";
 import type { TaskResponse, TaskStatus } from "@/features/tasks/types/task.types";
+import { apiTaskStatusTone, toneColors, type Tone } from "@/styles";
+
+import { addDays, formatWeekDividerLabel, isInMonth, parseDateKey, toDateKey } from "./calendarDates";
 
 export const TASK_STATUS_COLORS = Object.fromEntries(
   Object.entries(apiTaskStatusTone).map(([status, tone]) => [status, toneColors[tone].color]),
@@ -34,18 +36,18 @@ export function getTaskTone(task: TaskResponse): Tone {
   return isTaskOverdue(task) ? "error" : apiTaskStatusTone[task.status];
 }
 
-export type MonthSummary = { total: number; overdue: number; done: number };
+export type MonthSummary = { total: number; overdue: number; done: number; meetings: number };
 
-/** Counts for the tasks due in the month containing `monthDate`. */
-export function getMonthSummary(tasks: TaskResponse[], monthDate: Date): MonthSummary {
-  const monthPrefix = toDateKey(monthDate).slice(0, 7);
-  const summary: MonthSummary = { total: 0, overdue: 0, done: 0 };
+/** Counts for the tasks due, and meetings held, in the month containing `monthDate`. */
+export function getMonthSummary(tasks: TaskResponse[], meetings: BookingResponse[], monthDate: Date): MonthSummary {
+  const summary: MonthSummary = { total: 0, overdue: 0, done: 0, meetings: 0 };
   for (const task of tasks) {
-    if (!task.dueDate?.startsWith(monthPrefix)) continue;
+    if (!task.dueDate || !isInMonth(task.dueDate, monthDate)) continue;
     summary.total += 1;
     if (isTaskOverdue(task)) summary.overdue += 1;
     if (task.status === "DONE" || task.status === "APPROVED") summary.done += 1;
   }
+  summary.meetings = meetings.filter((meeting) => isInMonth(meeting.date, monthDate)).length;
   return summary;
 }
 
@@ -55,34 +57,39 @@ export function getTasksForDate(tasks: TaskResponse[], dateKey: string): TaskRes
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export type TaskAgendaEntry =
-  | { kind: "day"; date: Date; tasks: TaskResponse[] }
+/** Meetings on one day, earliest first. */
+export function getMeetingsForDate(meetings: BookingResponse[], dateKey: string): BookingResponse[] {
+  return meetings
+    .filter((meeting) => meeting.date === dateKey)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+}
+
+export type AgendaEntry =
+  | { kind: "day"; date: Date; meetings: BookingResponse[]; tasks: TaskResponse[] }
   | { kind: "gap"; label: string };
 
-/** Groups tasks by due date, sorted chronologically, with a "Week N, ..." divider inserted wherever a day is skipped. Tasks with no due date can't be placed on a calendar and are dropped. */
-export function buildTaskAgendaEntries(tasks: TaskResponse[]): TaskAgendaEntry[] {
-  const byDate = new Map<string, TaskResponse[]>();
-  for (const task of tasks) {
-    if (!task.dueDate) continue;
-    const list = byDate.get(task.dueDate) ?? [];
-    list.push(task);
-    byDate.set(task.dueDate, list);
-  }
+/**
+ * The month's days that have meetings or tasks due, in order, with a "Week N, ..." divider wherever
+ * days are skipped. Tasks with no due date can't be placed on a calendar and are dropped.
+ */
+export function buildAgendaEntries(tasks: TaskResponse[], meetings: BookingResponse[], monthDate: Date): AgendaEntry[] {
+  const dayKeys = new Set<string>();
+  for (const task of tasks) if (task.dueDate && isInMonth(task.dueDate, monthDate)) dayKeys.add(task.dueDate);
+  for (const meeting of meetings) if (isInMonth(meeting.date, monthDate)) dayKeys.add(meeting.date);
 
-  const sortedKeys = Array.from(byDate.keys()).sort();
-  const entries: TaskAgendaEntry[] = [];
+  const entries: AgendaEntry[] = [];
   let previousDate: Date | null = null;
 
-  for (const key of sortedKeys) {
+  for (const key of Array.from(dayKeys).sort()) {
     const date = parseDateKey(key);
     if (previousDate && date.getTime() - previousDate.getTime() > 86400000) {
       entries.push({ kind: "gap", label: formatWeekDividerLabel(addDays(previousDate, 1)) });
     }
-
     entries.push({
       kind: "day",
       date,
-      tasks: (byDate.get(key) ?? []).sort((a, b) => a.title.localeCompare(b.title)),
+      meetings: getMeetingsForDate(meetings, key),
+      tasks: getTasksForDate(tasks, key),
     });
     previousDate = date;
   }

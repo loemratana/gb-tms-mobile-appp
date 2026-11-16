@@ -25,6 +25,15 @@ export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+export function endOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+/** True when `dateKey` ("YYYY-MM-DD") falls in the month containing `monthDate`. */
+export function isInMonth(dateKey: string, monthDate: Date): boolean {
+  return dateKey.startsWith(toDateKey(monthDate).slice(0, 7));
+}
+
 /** Monday-to-Sunday week containing `referenceDate`. */
 function getWeekDays(referenceDate: Date): Date[] {
   const day = referenceDate.getDay();

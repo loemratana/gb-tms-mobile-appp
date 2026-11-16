@@ -3,13 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { toDateKey } from "@/features/calendar/utils/calendarDates";
 import { useMyMeetingsForDay } from "@/features/meetings/hooks/useMeetings";
 import {
-  getMonthOptions,
   getNowOffset,
   getTimelineBounds,
   getWeekDays,
   layoutTimeline,
-  moveToMonth,
-  type MonthOption,
   type TimelineBounds,
   type TimelineItem,
 } from "@/features/meetings/utils/meetingTime";
@@ -22,7 +19,6 @@ export type MeetingSchedule = {
   dateKey: string;
   isToday: boolean;
   weekDays: Date[];
-  months: MonthOption[];
   bounds: TimelineBounds;
   items: TimelineItem[];
   /** Y offset of the "now" line; null on other days or outside the visible hours. */
@@ -32,7 +28,6 @@ export type MeetingSchedule = {
   isRefreshing: boolean;
   refetch: () => void;
   selectDate: (date: Date) => void;
-  selectMonth: (month: Date) => void;
   goToday: () => void;
 };
 
@@ -55,14 +50,12 @@ export function useMeetingSchedule(): MeetingSchedule {
   const bounds = useMemo(() => getTimelineBounds(meetings), [meetings]);
   const items = useMemo(() => layoutTimeline(meetings, bounds), [meetings, bounds]);
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
-  const months = useMemo(() => getMonthOptions(selectedDate), [selectedDate]);
 
   return {
     selectedDate,
     dateKey,
     isToday,
     weekDays,
-    months,
     bounds,
     items,
     nowOffset: isToday ? getNowOffset(now, bounds) : null,
@@ -71,7 +64,6 @@ export function useMeetingSchedule(): MeetingSchedule {
     isRefreshing: query.isRefetching && !query.isLoading,
     refetch: () => void query.refetch(),
     selectDate: setSelectedDate,
-    selectMonth: (month) => setSelectedDate((current) => moveToMonth(current, month)),
     goToday: () => setSelectedDate(new Date()),
   };
 }

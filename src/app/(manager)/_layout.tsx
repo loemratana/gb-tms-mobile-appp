@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 
 import { NotificationSheetProvider } from "@/features/notifications/components/NotificationSheetProvider";
 import { CreateTaskSheetProvider } from "@/features/tasks/components/create/CreateTaskSheetProvider";
+import { PerformanceAwardPopup } from "@/features/team/components/PerformanceAwardPopup";
 
 export default function ManagerLayout() {
   return (
@@ -11,6 +12,20 @@ export default function ManagerLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="tasks/[id]"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="submit-work/[id]"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
+          <Stack.Screen
+            name="task-comments/[id]"
             options={{
               animation: "slide_from_right",
               presentation: "card",
@@ -93,7 +108,15 @@ export default function ManagerLayout() {
               presentation: "card",
             }}
           />
+          <Stack.Screen
+            name="my-tasks"
+            options={{
+              animation: "slide_from_right",
+              presentation: "card",
+            }}
+          />
         </Stack>
+        <PerformanceAwardPopup />
       </CreateTaskSheetProvider>
     </NotificationSheetProvider>
   );

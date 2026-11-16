@@ -8,11 +8,12 @@ import {
   previewBooking,
   updateBooking,
 } from "@/services/bookings.service";
-import { getAvailableRooms, getRoom, searchRooms } from "@/services/rooms.service";
+import { getAvailableRooms, getRoom, getRoomSchedule, searchRooms } from "@/services/rooms.service";
 import type {
   AvailableRoomsParams,
   BookingPreviewRequest,
   BookingRequest,
+  RoomScheduleParams,
   RoomSearchParams,
 } from "@/features/meetings/types/meeting.types";
 
@@ -23,6 +24,7 @@ export const meetingKeys = {
   all: ["meetings"] as const,
   days: () => [...meetingKeys.all, "day"] as const,
   day: (dateKey: string) => [...meetingKeys.days(), dateKey] as const,
+  range: (from: string, to: string) => [...meetingKeys.all, "range", from, to] as const,
   detail: (id: string) => [...meetingKeys.all, "detail", id] as const,
   preview: (request: BookingPreviewRequest) => [...meetingKeys.all, "preview", request] as const,
 };
@@ -31,6 +33,7 @@ export const roomKeys = {
   all: ["rooms"] as const,
   list: (params: RoomSearchParams) => [...roomKeys.all, "list", params] as const,
   available: (params: AvailableRoomsParams) => [...roomKeys.all, "available", params] as const,
+  schedule: (params: RoomScheduleParams) => [...roomKeys.all, "schedule", params] as const,
   detail: (id: string) => [...roomKeys.all, "detail", id] as const,
 };
 
@@ -46,6 +49,21 @@ export function useMyMeetingsForDay(dateKey: string) {
         size: DAY_PAGE_SIZE,
         sort: "startAt",
       });
+      return page.content;
+    },
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** A month rarely has more meetings than this for one person. */
+const RANGE_PAGE_SIZE = 200;
+
+/** Confirmed meetings the current user organizes or attends from `from` to `to` ("YYYY-MM-DD", inclusive). */
+export function useMyMeetingsInRange(from: string, to: string) {
+  return useQuery({
+    queryKey: meetingKeys.range(from, to),
+    queryFn: async () => {
+      const page = await listMyBookings({ from, to, status: "CONFIRMED", size: RANGE_PAGE_SIZE, sort: "startAt" });
       return page.content;
     },
     placeholderData: keepPreviousData,
@@ -76,6 +94,15 @@ export function useRoom(id: string | undefined) {
   });
 }
 
+/** Every active room's booked and free slots on one day ("YYYY-MM-DD"). */
+export function useRoomsDaySchedule(dateKey: string) {
+  return useQuery({
+    queryKey: roomKeys.schedule({ from: dateKey }),
+    queryFn: () => getRoomSchedule({ from: dateKey }),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useAvailableRooms(params: AvailableRoomsParams | null) {
   return useQuery({
     queryKey: roomKeys.available(params ?? { date: "", startTime: "", endTime: "" }),
@@ -101,6 +128,7 @@ function useInvalidateMeetings() {
     void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
     // Room availability changes with every booking.
     void queryClient.invalidateQueries({ queryKey: [...roomKeys.all, "available"] });
+    void queryClient.invalidateQueries({ queryKey: [...roomKeys.all, "schedule"] });
   };
 }
 

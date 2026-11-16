@@ -47,6 +47,8 @@ const BACKEND_TO_UI_TYPE: Record<string, UiType> = {
   TASK_COMMENTED: "COMMENT",
   TASK_UPDATED: "STATUS_UPDATE",
   TASK_REMINDER: "TASK_REMINDER",
+  // "Your task is overdue" / a manager's overdue summary: shown like a reminder.
+  TASK_OVERDUE: "TASK_REMINDER",
   APPROVAL_APPROVED: "TASK_APPROVED",
   APPROVAL_REJECTED: "TASK_REJECTED",
   MEETING_INVITED: "MEETING",

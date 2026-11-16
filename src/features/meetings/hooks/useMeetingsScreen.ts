@@ -12,7 +12,8 @@ import {
 import { canBookRooms, canManageRooms } from "@/features/auth/utils/permissions";
 import type { MeetingsView } from "@/features/meetings/components/schedule/MeetingsHeader";
 import { useMeetingSchedule } from "@/features/meetings/hooks/useMeetingSchedule";
-import { useRooms } from "@/features/meetings/hooks/useMeetings";
+import type { RoomCardSchedule } from "@/features/meetings/components/rooms/RoomCard";
+import { useRooms, useRoomsDaySchedule } from "@/features/meetings/hooks/useMeetings";
 import type { BookingResponse, RoomResponse } from "@/features/meetings/types/meeting.types";
 import { isPastDay } from "@/features/meetings/utils/meetingTime";
 import { useTaskSchedulePicker } from "@/features/tasks/hooks/useTaskSchedulePicker";
@@ -31,13 +32,23 @@ export function useMeetingsScreen() {
   const [view, setView] = useState<MeetingsView>("schedule");
   const schedule = useMeetingSchedule();
   const rooms = useRooms();
+  // The Rooms view shows each room's bookings on the day picked in the week strip.
+  const roomSchedule = useRoomsDaySchedule(schedule.dateKey);
+  const roomSchedules = new Map<string, RoomCardSchedule>();
+  const now = schedule.isToday ? new Date() : null;
+  const calendar = roomSchedule.data;
+  for (const row of calendar?.rooms ?? []) {
+    const day = row.days[0];
+    if (!calendar || !day) continue;
+    roomSchedules.set(row.room.id, { day, workdayStart: calendar.workdayStart, workdayEnd: calendar.workdayEnd, now });
+  }
 
   const handlePickDate = useCallback(
     (_target: string, value: string) => schedule.selectDate(parseDateKey(value)),
     [schedule],
   );
   const { openPicker, overlayProps } = useTaskSchedulePicker(
-    { scheduleType: "date", startDate: schedule.dateKey },
+    { startDate: schedule.dateKey },
     handlePickDate,
   );
 
@@ -65,6 +76,12 @@ export function useMeetingsScreen() {
     setView,
     schedule,
     rooms,
+    roomSchedules,
+    isRefreshingRooms: (rooms.isRefetching && !rooms.isLoading) || (roomSchedule.isRefetching && !roomSchedule.isLoading),
+    refetchRooms: () => {
+      void rooms.refetch();
+      void roomSchedule.refetch();
+    },
     canBook,
     openDatePicker: () => openPicker("startDate"),
     datePickerOverlay: overlayProps,

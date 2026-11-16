@@ -44,7 +44,7 @@ function AssigneeAvatar({ task }: { task: TaskResponse }) {
         <Avatar name={assignee.name} imageUrl={assignee.avatarUrl} size={48} />
         {extraCount > 0 ? (
           <View className="absolute -bottom-0.5 -right-1 min-w-[22px] items-center rounded-full border-2 border-surface bg-fg px-1 py-0.5">
-            <Text className="text-[10px] font-bold text-white">+{extraCount}</Text>
+            <Text className="font-sans text-[10px] font-bold text-white">+{extraCount}</Text>
           </View>
         ) : null}
       </View>

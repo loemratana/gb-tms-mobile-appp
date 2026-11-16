@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 
 import { NotificationSheetProvider } from "@/features/notifications/components/NotificationSheetProvider";
+import { PerformanceAwardPopup } from "@/features/team/components/PerformanceAwardPopup";
 
 export default function EmployeeLayout() {
   return (
@@ -9,6 +10,20 @@ export default function EmployeeLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="tasks/[id]"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="submit-work/[id]"
+          options={{
+            animation: "slide_from_right",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="task-comments/[id]"
           options={{
             animation: "slide_from_right",
             presentation: "card",
@@ -71,6 +86,7 @@ export default function EmployeeLayout() {
           }}
         />
       </Stack>
+      <PerformanceAwardPopup />
     </NotificationSheetProvider>
   );
 }

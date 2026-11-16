@@ -102,7 +102,7 @@ function HybridSheetHeader({
             </Pressable>
           </Animated.View>
 
-          <Text className="text-[20px] font-bold tracking-tight text-fg">Notifications</Text>
+          <Text className="font-sans text-[20px] font-bold tracking-tight text-fg">Notifications</Text>
           {unreadCount > 0 ? (
             <View className="ml-2 min-w-[22px] items-center rounded-full bg-brand px-1.5 py-0.5">
               <Text className="text-micro font-bold text-white">{unreadCount}</Text>

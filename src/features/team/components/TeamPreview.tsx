@@ -68,7 +68,7 @@ export function TeamPreview({ onSeeAll, onMemberPress }: TeamPreviewProps) {
   return (
     <View>
       <SectionHeader
-        title={status === "loading" ? "Team" : team.department}
+        title={status === "loading" ? "Team" : team.title}
         meta={status === "ready" ? `${members.length} ${members.length === 1 ? "member" : "members"}` : undefined}
         actionLabel="See all"
         onPressAction={handleSeeAll}

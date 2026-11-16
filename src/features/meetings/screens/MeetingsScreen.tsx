@@ -9,7 +9,6 @@ import { RoomList } from "@/features/meetings/components/rooms/RoomList";
 import { MeetingsHeader } from "@/features/meetings/components/schedule/MeetingsHeader";
 import { MeetingTimeline } from "@/features/meetings/components/schedule/MeetingTimeline";
 import { MeetingTimelineSkeleton } from "@/features/meetings/components/schedule/MeetingTimelineSkeleton";
-import { MonthChips } from "@/features/meetings/components/schedule/MonthChips";
 import { WeekStrip } from "@/features/meetings/components/schedule/WeekStrip";
 import { useMeetingsScreen } from "@/features/meetings/hooks/useMeetingsScreen";
 import { formatDayHeading } from "@/features/meetings/utils/meetingTime";
@@ -20,8 +19,22 @@ const FAB_GAP = 12;
 /** Meetings tab: the selected day's meetings on a timeline, or the room list. */
 export default function MeetingsScreen() {
   const tabBarInset = useTabBarInset();
-  const { view, setView, schedule, rooms, canBook, openDatePicker, datePickerOverlay, openMeeting, createMeeting, bookRoom, manageRooms } =
-    useMeetingsScreen();
+  const {
+    view,
+    setView,
+    schedule,
+    rooms,
+    roomSchedules,
+    isRefreshingRooms,
+    refetchRooms,
+    canBook,
+    openDatePicker,
+    datePickerOverlay,
+    openMeeting,
+    createMeeting,
+    bookRoom,
+    manageRooms,
+  } = useMeetingsScreen();
   const isSchedule = view === "schedule";
 
   const renderSchedule = () => {
@@ -65,16 +78,18 @@ export default function MeetingsScreen() {
       <MeetingsHeader
         view={view}
         onChangeView={setView}
-        eyebrow={isSchedule ? (schedule.isToday ? "Today" : schedule.selectedDate.getFullYear().toString()) : undefined}
-        title={isSchedule ? formatDayHeading(schedule.selectedDate) : "Rooms"}
-        onPressCalendar={isSchedule ? openDatePicker : undefined}
+        subtitle={
+          isSchedule
+            ? schedule.isToday
+              ? "Today"
+              : schedule.selectedDate.getFullYear().toString()
+            : `Rooms · ${schedule.isToday ? "Today" : schedule.selectedDate.getFullYear()}`
+        }
+        title={formatDayHeading(schedule.selectedDate)}
+        onPressCalendar={openDatePicker}
       >
-        {isSchedule ? (
-          <>
-            <MonthChips months={schedule.months} selectedDate={schedule.selectedDate} onSelectMonth={schedule.selectMonth} />
-            <WeekStrip weekDays={schedule.weekDays} selectedDate={schedule.selectedDate} onSelectDate={schedule.selectDate} />
-          </>
-        ) : null}
+        {/* Both views follow the same day: meetings on it, or each room's bookings on it. */}
+        <WeekStrip weekDays={schedule.weekDays} selectedDate={schedule.selectedDate} onSelectDate={schedule.selectDate} />
       </MeetingsHeader>
 
       <ScrollView
@@ -83,8 +98,8 @@ export default function MeetingsScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: tabBarInset + FAB_SIZE + FAB_GAP * 2 }}
         refreshControl={
           <RefreshControl
-            refreshing={isSchedule ? schedule.isRefreshing : rooms.isRefetching && !rooms.isLoading}
-            onRefresh={() => (isSchedule ? schedule.refetch() : void rooms.refetch())}
+            refreshing={isSchedule ? schedule.isRefreshing : isRefreshingRooms}
+            onRefresh={() => (isSchedule ? schedule.refetch() : refetchRooms())}
           />
         }
       >
@@ -110,6 +125,7 @@ export default function MeetingsScreen() {
             isError={rooms.isError}
             onRetry={() => void rooms.refetch()}
             onBook={bookRoom}
+            schedules={roomSchedules}
             emptyMessage={manageRooms ? "Tap Manage rooms to add the first one." : undefined}
           />
           </>

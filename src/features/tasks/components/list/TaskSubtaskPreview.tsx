@@ -48,7 +48,7 @@ function SubtaskChip({
           />
         ) : (
           <View className="h-7 w-7 items-center justify-center rounded-full bg-line">
-            <Text className="text-[10px] font-bold text-fg-soft">
+            <Text className="font-sans text-[10px] font-bold text-fg-soft">
               {subtask.assigneeName.charAt(0).toUpperCase()}
             </Text>
           </View>
@@ -61,7 +61,7 @@ function SubtaskChip({
           >
             {subtask.title}
           </Text>
-          <Text className="text-[10px] text-fg-soft" numberOfLines={1}>
+          <Text className="font-sans text-[10px] text-fg-soft" numberOfLines={1}>
             {subtask.assigneeName}
           </Text>
         </View>
@@ -78,16 +78,16 @@ function SubtaskChip({
       </View>
 
       <View className="mt-1.5 flex-row items-center justify-between">
-        <Text className="text-[10px] font-medium text-fg-soft">
+        <Text className="font-sans text-[10px] font-medium text-fg-soft">
           {getStatusLabel(subtask.status)}
         </Text>
-        <Text className="text-[10px] font-semibold text-fg">
+        <Text className="font-sans text-[10px] font-semibold text-fg">
           {workProgress}%
         </Text>
       </View>
 
       {onPress ? (
-        <Text className="mt-1 text-[10px] font-semibold text-brand-strong">View work</Text>
+        <Text className="mt-1 font-sans text-[10px] font-semibold text-brand-strong">View work</Text>
       ) : null}
     </>
   );
@@ -138,7 +138,7 @@ function AssigneeAvatarRow({
             className="h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-line"
             style={{ marginLeft: index > 0 ? -8 : 0 }}
           >
-            <Text className="text-[9px] font-bold text-fg-soft">
+            <Text className="font-sans text-[9px] font-bold text-fg-soft">
               {assignee.assigneeName.charAt(0).toUpperCase()}
             </Text>
           </View>
@@ -149,7 +149,7 @@ function AssigneeAvatarRow({
           className="h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-subtle"
           style={{ marginLeft: -8 }}
         >
-          <Text className="text-[9px] font-bold text-fg-soft">+{overflow}</Text>
+          <Text className="font-sans text-[9px] font-bold text-fg-soft">+{overflow}</Text>
         </View>
       ) : null}
     </View>

@@ -2,8 +2,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Controller, type Control, type FieldErrors } from "react-hook-form";
 import { Pressable, Text, View } from "react-native";
 
-import { TextField } from "@/components/ui/TextField";
+import { FormField } from "@/components/ui/FormField";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/SegmentedControl";
+import { TextField } from "@/components/ui/TextField";
 import type { MeetingFormValues } from "@/features/meetings/schemas/meetingForm.schema";
 import type { MeetingLocationType, RoomSummary } from "@/features/meetings/types/meeting.types";
 import {
@@ -15,7 +16,7 @@ import {
   type MapPin,
 } from "@/features/meetings/utils/meetingLocation";
 import { colors } from "@/styles";
-import { FormField } from "./FormField";
+
 import { FormSelectField } from "./FormSelectField";
 
 const TYPE_OPTIONS: SegmentOption<MeetingLocationType>[] = (["ROOM", "EXTERNAL", "ONLINE"] as const).map((value) => ({
@@ -76,7 +77,7 @@ export function MeetingLocationFields({
   );
 
   const noteField = (
-    <FormField label="Note for attendees (optional)" error={errors.locationNote?.message}>
+    <FormField label="Note for attendees" isOptional error={errors.locationNote?.message}>
       {renderTextInput("locationNote", {
         label: "Note for attendees",
         placeholder: values.locationType === "ONLINE" ? "Passcode, dial-in number…" : "Floor, entrance, parking…",
@@ -164,7 +165,7 @@ export function MeetingLocationFields({
             )}
           </FormField>
 
-          <FormField label="Address (optional)" error={errors.placeAddress?.message}>
+          <FormField label="Address" isOptional error={errors.placeAddress?.message}>
             {renderTextInput("placeAddress", { label: "Address", placeholder: "Street, district", maxLength: 500 })}
           </FormField>
           {noteField}
@@ -181,7 +182,7 @@ export function MeetingLocationFields({
               isUrl: true,
             })}
           </FormField>
-          <FormField label="Platform (optional)" error={errors.placeName?.message}>
+          <FormField label="Platform" isOptional error={errors.placeName?.message}>
             {renderTextInput("placeName", { label: "Platform", placeholder: "Zoom, Google Meet, Teams…", maxLength: 200 })}
           </FormField>
           {noteField}

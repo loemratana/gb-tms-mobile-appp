@@ -1,14 +1,20 @@
 import { Text, View } from "react-native";
 
 import { StateView } from "@/components/ui/StateView";
-import { CalendarEventCard } from "./CalendarEventCard";
-import { buildTaskAgendaEntries } from "@/features/calendar/utils/calendarTasks";
 import { isSameDay } from "@/features/calendar/utils/calendarDates";
+import { buildAgendaEntries } from "@/features/calendar/utils/calendarTasks";
+import type { BookingResponse } from "@/features/meetings/types/meeting.types";
 import type { TaskResponse } from "@/features/tasks/types/task.types";
 
+import { CalendarEventCard } from "./CalendarEventCard";
+import { CalendarMeetingCard } from "./CalendarMeetingCard";
+
 type AgendaCalendarViewProps = {
+  monthDate: Date;
   tasks: TaskResponse[];
+  meetings: BookingResponse[];
   onTaskPress?: (task: TaskResponse) => void;
+  onMeetingPress?: (meeting: BookingResponse) => void;
 };
 
 /** Date column for one agenda day; today is a filled brand circle. */
@@ -25,8 +31,9 @@ function AgendaDate({ date, isToday }: { date: Date; isToday: boolean }) {
   );
 }
 
-export function AgendaCalendarView({ tasks, onTaskPress }: AgendaCalendarViewProps) {
-  const entries = buildTaskAgendaEntries(tasks);
+/** The month in the header as a list: each busy day with its meetings (by time), then its due tasks. */
+export function AgendaCalendarView({ monthDate, tasks, meetings, onTaskPress, onMeetingPress }: AgendaCalendarViewProps) {
+  const entries = buildAgendaEntries(tasks, meetings, monthDate);
   const today = new Date();
 
   if (entries.length === 0) {
@@ -34,8 +41,8 @@ export function AgendaCalendarView({ tasks, onTaskPress }: AgendaCalendarViewPro
       <StateView
         variant="empty"
         icon="calendar-clear-outline"
-        title="No tasks scheduled"
-        message="Tasks with a due date will show up here"
+        title="Nothing this month"
+        message="Meetings and tasks with a due date show up here."
       />
     );
   }
@@ -57,6 +64,9 @@ export function AgendaCalendarView({ tasks, onTaskPress }: AgendaCalendarViewPro
           <View key={entry.date.toISOString()} className="mb-4 flex-row gap-2">
             <AgendaDate date={entry.date} isToday={isSameDay(entry.date, today)} />
             <View className="min-w-0 flex-1 gap-2">
+              {entry.meetings.map((meeting) => (
+                <CalendarMeetingCard key={meeting.id} meeting={meeting} onPress={onMeetingPress} />
+              ))}
               {entry.tasks.map((task) => (
                 <CalendarEventCard key={task.id} task={task} onPress={onTaskPress} />
               ))}

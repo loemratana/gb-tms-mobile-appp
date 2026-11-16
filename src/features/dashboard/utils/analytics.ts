@@ -15,14 +15,16 @@ export type WeeklyProductivityDatum = {
 
 export type EmployeeWorkloadDatum = {
   id: string;
+  /** Full name: the workload list has room for it (the old bar chart cut it to a first name). */
   name: string;
+  avatarUrl: string | null;
   tasks: number;
 };
 
 const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
-  TODO: { label: "To Do", color: toneColors[apiTaskStatusTone.TODO].color },
-  IN_PROGRESS: { label: "In Progress", color: toneColors[apiTaskStatusTone.IN_PROGRESS].color },
-  IN_REVIEW: { label: "Review", color: toneColors[apiTaskStatusTone.IN_REVIEW].color },
+  TODO: { label: "To do", color: toneColors[apiTaskStatusTone.TODO].color },
+  IN_PROGRESS: { label: "In progress", color: toneColors[apiTaskStatusTone.IN_PROGRESS].color },
+  IN_REVIEW: { label: "In review", color: toneColors[apiTaskStatusTone.IN_REVIEW].color },
   DONE: { label: "Done", color: toneColors[apiTaskStatusTone.DONE].color },
   REJECTED: { label: "Rejected", color: toneColors[apiTaskStatusTone.REJECTED].color },
 };
@@ -71,7 +73,8 @@ export function toManagerAssignedEmployeeWorkloadData(
 ): EmployeeWorkloadDatum[] {
   return kpi.memberWorkload.slice(0, 5).map((member) => ({
     id: member.memberId,
-    name: member.memberName.split(" ")[0],
+    name: member.memberName,
+    avatarUrl: member.avatarUrl ?? null,
     tasks: member.taskCount,
   }));
 }

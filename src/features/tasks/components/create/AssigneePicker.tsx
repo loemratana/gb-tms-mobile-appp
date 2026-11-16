@@ -15,6 +15,8 @@ type AssigneePickerProps = {
   error?: string;
   isLoading?: boolean;
   loadError?: string;
+  /** Picker sheet title; depends on who the user may assign (team, department, everyone). */
+  title?: string;
 };
 
 export function AssigneePicker({
@@ -24,6 +26,7 @@ export function AssigneePicker({
   error,
   isLoading,
   loadError,
+  title = "Select team members",
 }: AssigneePickerProps) {
   const [visible, setVisible] = useState(false);
 
@@ -59,13 +62,17 @@ export function AssigneePicker({
           );
         })}
 
+        {/* Classes on the inner View: on Android this touchable is gesture-handler's, which
+            NativeWind doesn't style. */}
         <BottomSheetTouchableOpacity
           onPress={() => setVisible(true)}
-          className="h-8 w-8 items-center justify-center rounded-full border border-dashed border-line-strong"
+          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Add assignee"
         >
-          <Ionicons name="add" size={16} color={colors.textMuted} />
+          <View className="h-8 w-8 items-center justify-center rounded-full border border-dashed border-line-strong">
+            <Ionicons name="add" size={16} color={colors.textMuted} />
+          </View>
         </BottomSheetTouchableOpacity>
       </View>
 
@@ -73,7 +80,7 @@ export function AssigneePicker({
 
       <PersonPickerSheet
         visible={visible}
-        title="Select team members"
+        title={title}
         onClose={() => setVisible(false)}
         people={employees}
         isLoading={isLoading}

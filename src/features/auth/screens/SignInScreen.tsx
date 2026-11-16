@@ -73,7 +73,7 @@ export default function SignInScreen() {
                 />
               </View>
 
-              <Text className="text-[28px] font-bold tracking-tight text-white">
+              <Text className="font-sans text-[28px] font-bold tracking-tight text-white">
                 Welcome back
               </Text>
               <Text className="mt-1.5 text-center text-body text-white/85">
@@ -93,7 +93,7 @@ export default function SignInScreen() {
                 Account login
               </Text>
             </View>
-            <Text className="mb-6 text-[20px] font-bold text-fg">
+            <Text className="mb-6 font-sans text-[20px] font-bold text-fg">
               Sign in to your workspace
             </Text>
 

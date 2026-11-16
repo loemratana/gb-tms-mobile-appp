@@ -17,6 +17,8 @@ import type {
   AssignTaskRequest,
   CreateTaskCommentRequest,
   CreateTaskRequest,
+  TaskCommentResponse,
+  TaskParticipant,
   TaskResponse,
   TaskStatus,
   UpdateTaskReminderSettingsRequest,
@@ -153,13 +155,34 @@ export function useUpdateTaskReminderSettings(id: string) {
   });
 }
 
-export function useAddTaskComment(taskId: string) {
+/**
+ * Sends a comment and shows it in the thread immediately (marked pending) instead of waiting for
+ * the server. On failure the thread rolls back and the caller gets the error to show.
+ */
+export function useAddTaskComment(taskId: string, author?: TaskParticipant | null) {
   const queryClient = useQueryClient();
+  const key = taskKeys.comments(taskId);
 
   return useMutation({
     mutationFn: (input: CreateTaskCommentRequest) => addTaskComment(taskId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) });
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<TaskCommentResponse[]>(key);
+      const optimistic: TaskCommentResponse = {
+        id: `pending-${Date.now()}`,
+        content: input.content,
+        author: author ?? null,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      };
+      queryClient.setQueryData<TaskCommentResponse[]>(key, [...(previous ?? []), optimistic]);
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      queryClient.setQueryData(key, context?.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key });
       invalidateTaskListsAndSummaries(queryClient);
     },
   });

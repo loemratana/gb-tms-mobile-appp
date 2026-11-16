@@ -17,20 +17,22 @@ export const departmentKeys = {
   members: (id: string) => [...departmentKeys.detail(id), "members"] as const,
 };
 
-export function useDepartments() {
+export function useDepartments(enabled = true) {
   return useQuery({
     queryKey: departmentKeys.lists(),
     queryFn: listDepartments,
     staleTime: 5 * 60_000,
+    enabled,
   });
 }
 
-export function useDepartmentTree() {
+export function useDepartmentTree(enabled = true) {
   return useQuery({
     queryKey: departmentKeys.tree(),
     queryFn: getDepartmentTree,
     // Shorter than the list: membership also changes through user edits, which don't invalidate this key.
     staleTime: 60_000,
+    enabled,
   });
 }
 

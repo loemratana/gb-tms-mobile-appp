@@ -1,18 +1,23 @@
 import { useRouter } from "expo-router";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { useMemo } from "react";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { SegmentedControl, type SegmentOption } from "@/components/ui/SegmentedControl";
 import { StateView } from "@/components/ui/StateView";
 import { getTeamMemberPathForRole } from "@/features/auth/utils/navigation";
+import { LeaderboardPeriodPicker } from "@/features/team/components/LeaderboardPeriodPicker";
 import { TeamHeader } from "@/features/team/components/TeamHeader";
 import { TeamHeroCard } from "@/features/team/components/TeamHeroCard";
 import { TeamListSkeleton } from "@/features/team/components/TeamListSkeleton";
-import { TeamMemberCard } from "@/features/team/components/TeamMemberCard";
+import { TeamMemberRow } from "@/features/team/components/TeamMemberRow";
+import { TeamScopeTabs, type TeamScopeOption } from "@/features/team/components/TeamScopeTabs";
 import { TeamState } from "@/features/team/components/TeamState";
+import { useTeamPerformance } from "@/features/team/hooks/useTeamPerformance";
 import { useTeamRoster, type TeamScope } from "@/features/team/hooks/useTeamRoster";
 import type { TeamRosterMember } from "@/features/team/types/team.types";
+import { sortByPerformance } from "@/features/team/utils/teamPerformance";
+import { useCurrentUser } from "@/features/users/hooks/useUsers";
 import { useBackAction } from "@/hooks/useBackAction";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -21,8 +26,8 @@ export type { TeamScope } from "@/features/team/hooks/useTeamRoster";
 type TeamScreenProps = {
   bottomInset?: number;
   scope?: TeamScope;
-  /** When given with `onChangeScope`, a switcher above the roster lets the viewer change scope. */
-  scopeOptions?: SegmentOption<TeamScope>[];
+  /** When given with `onChangeScope`, tabs under the header let the viewer change scope. */
+  scopeOptions?: TeamScopeOption[];
   onChangeScope?: (scope: TeamScope) => void;
 };
 
@@ -32,12 +37,21 @@ export default function TeamScreen({ bottomInset, scope = "department", scopeOpt
   const insets = useSafeAreaInsets();
   const backAction = useBackAction();
   const roster = useTeamRoster(scope);
+  const { data: me } = useCurrentUser();
   const isReportsScope = scope === "directReports";
+  // Rankings are per department, so performance shows only for viewers who belong to one.
+  const hasPerformance = Boolean(me?.department?.id);
+  const performance = useTeamPerformance(hasPerformance);
+  const members = useMemo(
+    () => sortByPerformance(roster.visibleMembers, performance.entriesByUserId),
+    [roster.visibleMembers, performance.entriesByUserId],
+  );
 
-  const openMember = (member: TeamRosterMember) => {
+  const openMemberById = (memberId: string) => {
     if (!role) return;
-    router.push(getTeamMemberPathForRole(role, member.id));
+    router.push(getTeamMemberPathForRole(role, memberId));
   };
+  const openMember = (member: TeamRosterMember) => openMemberById(member.id);
 
   const renderBody = () => {
     if (roster.status === "loading") return <TeamListSkeleton count={6} />;
@@ -59,7 +73,16 @@ export default function TeamScreen({ bottomInset, scope = "department", scopeOpt
               title={isReportsScope ? "Direct reports" : "Teammates"}
               meta={roster.query ? `${roster.visibleMembers.length} of ${roster.members.length}` : String(roster.members.length)}
             />
+            {hasPerformance ? (
+              <LeaderboardPeriodPicker value={performance.selection} onChange={performance.setSelection} />
+            ) : null}
           </View>
+
+          {performance.isError ? (
+            <Text className="mb-2 px-4 text-label text-error" onPress={performance.refetch}>
+              Couldn&apos;t load performance. Tap to retry.
+            </Text>
+          ) : null}
 
           {roster.visibleMembers.length === 0 ? (
             <View className="px-4">
@@ -72,9 +95,18 @@ export default function TeamScreen({ bottomInset, scope = "department", scopeOpt
               />
             </View>
           ) : (
-            <View className="gap-2.5 px-4">
-              {roster.visibleMembers.map((member) => (
-                <TeamMemberCard key={member.id} member={member} onPress={openMember} />
+            <View className="bg-surface" style={{ opacity: performance.isSwitchingPeriod ? 0.6 : 1 }}>
+              {members.map((member, index) => (
+                <TeamMemberRow
+                  key={member.id}
+                  member={member}
+                  performance={performance.entriesByUserId.get(member.id)}
+                  hasPerformance={hasPerformance && !performance.isError}
+                  isPerformanceLoading={performance.isLoading}
+                  isMe={member.id === me?.id}
+                  hasDivider={index > 0}
+                  onPress={openMember}
+                />
               ))}
             </View>
           )}
@@ -91,6 +123,9 @@ export default function TeamScreen({ bottomInset, scope = "department", scopeOpt
         onChangeQuery={roster.setQuery}
         onBack={backAction}
       />
+      {scopeOptions && onChangeScope ? (
+        <TeamScopeTabs options={scopeOptions} value={scope} onChange={onChangeScope} />
+      ) : null}
 
       <ScrollView
         className="flex-1"
@@ -100,11 +135,6 @@ export default function TeamScreen({ bottomInset, scope = "department", scopeOpt
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={roster.isRefreshing} onRefresh={() => void roster.refresh()} />}
       >
-        {scopeOptions && onChangeScope ? (
-          <View className="mb-4 px-4">
-            <SegmentedControl options={scopeOptions} value={scope} onChange={onChangeScope} />
-          </View>
-        ) : null}
         {renderBody()}
       </ScrollView>
     </View>

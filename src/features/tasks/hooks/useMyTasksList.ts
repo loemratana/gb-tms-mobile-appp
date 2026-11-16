@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert } from "react-native";
+
 
 import { mapTaskResponseToEmployeeTask } from "@/features/tasks/utils/taskResponseAdapter";
-import { isSubtask, isTaskOverdue } from "@/features/tasks/utils/task.utils";
+import { isTaskOverdue, toListRows } from "@/features/tasks/utils/task.utils";
 import type { StatusFilter, Task } from "@/features/tasks/types/taskView.types";
 import {
   EMPTY_TASK_FILTERS,
@@ -24,6 +24,7 @@ import type { TaskSearchParams } from "@/features/tasks/types/task.types";
 import { useCurrentUser } from "@/features/users/hooks/useUsers";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { getApiErrorMessage } from "@/lib/api";
+import { toast } from "@/stores/toastStore";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -85,12 +86,9 @@ export function useMyTasksList(searchParams?: TaskSearchParams): MyTasksList {
   } = useTasks(resolvedParams, isQueryEnabled);
   useRefetchOnFocus(refetch);
 
-  // Subtasks render nested inside their parent, never as top-level rows.
+  // Subtasks whose parent is also listed render inside the parent's card, not as rows (toListRows).
   const topLevelTasks = useMemo(
-    () =>
-      (tasksPage?.content ?? [])
-        .map(mapTaskResponseToEmployeeTask)
-        .filter((task) => !isSubtask(task)),
+    () => toListRows((tasksPage?.content ?? []).map(mapTaskResponseToEmployeeTask)),
     [tasksPage],
   );
 
@@ -173,7 +171,7 @@ export function useMyTasksList(searchParams?: TaskSearchParams): MyTasksList {
         });
       } catch (error) {
         // Show the server's reason (e.g. the task was cancelled meanwhile), not a generic retry hint.
-        Alert.alert("Couldn't confirm task", getApiErrorMessage(error));
+        toast.error("Couldn't confirm task", getApiErrorMessage(error));
       } finally {
         setConfirmingTaskId(null);
       }

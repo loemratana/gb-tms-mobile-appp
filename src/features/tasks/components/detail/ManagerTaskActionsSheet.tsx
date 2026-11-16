@@ -21,7 +21,7 @@ import {
   SheetHeader,
   useSheetBackdrop,
 } from "@/components/ui/BottomSheet";
-import { colors, toneColors } from "@/styles";
+import { colors } from "@/styles";
 
 export type ManagerTaskActionsSheetRef = {
   present: () => void;
@@ -31,8 +31,8 @@ export type ManagerTaskActionsSheetRef = {
 type ManagerTaskActionsSheetProps = {
   onReassign: () => void;
   onChangePriority: () => void;
-  onMarkReview: () => void;
-  canMarkReview?: boolean;
+  /** False for a group task: people are added through member subtasks, so the server refuses reassigning it. */
+  canReassign?: boolean;
   /** Shown only when provided and canDelete is true. */
   onDelete?: () => void;
   canDelete?: boolean;
@@ -41,7 +41,6 @@ type ManagerTaskActionsSheetProps = {
 type ActionKey =
   | "reassign"
   | "change_priority"
-  | "mark_review"
   | "delete";
 
 const ACTIONS: {
@@ -63,12 +62,6 @@ const ACTIONS: {
     color: colors.warning,
   },
   {
-    key: "mark_review",
-    title: "Mark for Review",
-    icon: "eye-outline",
-    color: toneColors.violet.color,
-  },
-  {
     key: "delete",
     title: "Delete Task",
     icon: "trash-outline",
@@ -83,8 +76,7 @@ export const ManagerTaskActionsSheet = forwardRef<
   {
     onReassign,
     onChangePriority,
-    onMarkReview,
-    canMarkReview = true,
+    canReassign = true,
     onDelete,
     canDelete = false,
   },
@@ -116,9 +108,8 @@ export const ManagerTaskActionsSheet = forwardRef<
 
     if (key === "reassign") onReassign();
     if (key === "change_priority") onChangePriority();
-    if (key === "mark_review") onMarkReview();
     if (key === "delete") onDelete?.();
-  }, [onReassign, onChangePriority, onMarkReview, onDelete]);
+  }, [onReassign, onChangePriority, onDelete]);
 
   const handleAction = (key: ActionKey) => {
     pendingActionRef.current = key;
@@ -126,7 +117,7 @@ export const ManagerTaskActionsSheet = forwardRef<
   };
 
   const visibleActions = ACTIONS.filter((action) => {
-    if (action.key === "mark_review") return canMarkReview;
+    if (action.key === "reassign") return canReassign;
     if (action.key === "delete") return canDelete && Boolean(onDelete);
     return true;
   });

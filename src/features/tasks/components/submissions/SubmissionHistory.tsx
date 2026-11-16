@@ -1,11 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
-import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import { Pressable, Text, View } from "react-native";
 
+import { Avatar } from "@/components/ui/Avatar";
 import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SkeletonBlock, SkeletonCircle } from "@/components/ui/Skeleton";
+import { StateView } from "@/components/ui/StateView";
 import type {
   SubmissionFileResponse,
   TaskSubmissionResponse,
@@ -17,7 +20,8 @@ import {
 } from "@/features/tasks/utils/submissionStatus";
 import { getRemoteImageSource, getRemoteImageUrl } from "@/lib/remoteImage";
 import { useAuthStore } from "@/stores/authStore";
-import { palette } from "@/styles";
+import { colors } from "@/styles";
+import { toast } from "@/stores/toastStore";
 
 async function openFile(file: SubmissionFileResponse) {
   try {
@@ -26,10 +30,17 @@ async function openFile(file: SubmissionFileResponse) {
       enableBarCollapsing: true,
     });
   } catch {
-    Alert.alert("Can't open file", `${file.originalName} couldn't be opened on this device.`);
+    toast.error("Can't open file", `${file.originalName} couldn't be opened on this device.`);
   }
 }
 
+type AttachmentHandlers = {
+  accessToken: string | null;
+  onOpenImage: (image: SubmissionFileResponse) => void;
+  onOpenFile: (file: SubmissionFileResponse) => void;
+};
+
+/** The one place a submission's review status is shown. */
 function StatusPill({ submission }: { submission: TaskSubmissionResponse }) {
   const style = SUBMISSION_STATUS_STYLE[submission.status];
   return (
@@ -42,78 +53,42 @@ function StatusPill({ submission }: { submission: TaskSubmissionResponse }) {
   );
 }
 
-function SubmitterAvatar({ name }: { name: string }) {
-  return (
-    <View className="h-9 w-9 items-center justify-center rounded-full bg-brand-subtle">
-      <Text className="text-caption font-bold text-brand-strong">{name.trim().charAt(0).toUpperCase() || "?"}</Text>
-    </View>
-  );
-}
-
-function ReviewOutcome({ submission }: { submission: TaskSubmissionResponse }) {
-  if (submission.status === "PENDING") {
-    return (
-      <View className="mt-4 flex-row items-center gap-2 rounded-xl bg-warning-subtle px-3 py-2.5">
-        <Ionicons name="time-outline" size={16} color={palette.amber[600]} />
-        <Text className="text-label font-medium text-warning-fg">Waiting for a reviewer</Text>
-      </View>
-    );
-  }
-
-  const isApproved = submission.status === "APPROVED";
-  const style = SUBMISSION_STATUS_STYLE[submission.status];
-
-  return (
-    <View
-      className="mt-4 rounded-xl px-3 py-3"
-      style={{ backgroundColor: style.bg, borderLeftWidth: 3, borderLeftColor: style.color }}
-    >
-      <View className="flex-row items-center gap-1.5">
-        <Ionicons
-          name={isApproved ? "checkmark-circle" : "close-circle"}
-          size={16}
-          color={style.color}
-        />
-        <Text className="flex-1 text-label font-semibold" style={{ color: style.color }}>
-          {style.label} by {submission.reviewedByName ?? "a reviewer"}
-        </Text>
-        {submission.reviewedAt ? (
-          <Text className="text-micro text-fg-faint">{formatSubmissionDateTime(submission.reviewedAt)}</Text>
-        ) : null}
-      </View>
-      {submission.reviewComment ? (
-        <Text className="mt-1.5 text-caption leading-5 text-fg-sub">{submission.reviewComment}</Text>
-      ) : null}
-    </View>
-  );
-}
-
-function SubmissionBody({
+/** What was submitted: late reason, note, photos and files. */
+function SubmissionContent({
   submission,
   accessToken,
   onOpenImage,
   onOpenFile,
-}: {
-  submission: TaskSubmissionResponse;
-  accessToken: string | null;
-  onOpenImage: (image: SubmissionFileResponse) => void;
-  onOpenFile: (file: SubmissionFileResponse) => void;
-}) {
+}: { submission: TaskSubmissionResponse } & AttachmentHandlers) {
+  const hasContent =
+    submission.late || submission.note || submission.images.length > 0 || submission.files.length > 0;
+  if (!hasContent) return null;
+
   return (
-    <>
+    <View className="gap-3 pt-3">
+      {submission.late ? (
+        <View className="flex-row items-start gap-2">
+          <Ionicons name="alert-circle" size={15} color={colors.danger} style={{ marginTop: 2 }} />
+          <Text className="flex-1 text-caption text-error-fg">
+            <Text className="font-semibold">Submitted late</Text>
+            {submission.lateReason ? ` — ${submission.lateReason}` : ""}
+          </Text>
+        </View>
+      ) : null}
+
       {submission.note ? (
-        <Text className="mt-3 text-body-sm leading-[21px] text-fg-sub">{submission.note}</Text>
+        <Text className="text-body-sm text-fg">{submission.note}</Text>
       ) : null}
 
       {submission.images.length > 0 ? (
-        <View className="mt-3 flex-row flex-wrap gap-2">
+        <View className="flex-row flex-wrap gap-2">
           {submission.images.map((image) => (
             <Pressable
               key={image.id}
               onPress={() => onOpenImage(image)}
               accessibilityRole="imagebutton"
               accessibilityLabel={`View image ${image.originalName}`}
-              className="aspect-square w-[31.5%] overflow-hidden rounded-xl bg-subtle"
+              className="aspect-square w-[31.5%] overflow-hidden rounded-xl bg-subtle active:opacity-80"
             >
               <Image
                 source={getRemoteImageSource(image.url, accessToken)}
@@ -126,19 +101,19 @@ function SubmissionBody({
       ) : null}
 
       {submission.files.length > 0 ? (
-        <View className="mt-3 overflow-hidden">
+        <View>
           {submission.files.map((file, index) => (
             <Pressable
               key={file.id}
               onPress={() => onOpenFile(file)}
               accessibilityRole="button"
               accessibilityLabel={`Open file ${file.originalName}`}
-              className={`flex-row items-center gap-3 bg-surface px-3 py-2.5 active:bg-field ${
+              className={`flex-row items-center gap-3 py-2.5 active:opacity-70 ${
                 index > 0 ? "border-t border-line-soft" : ""
               }`}
             >
               <View className="h-9 w-9 items-center justify-center rounded-lg bg-subtle">
-                <Ionicons name={getDocumentIcon(file.contentType, file.originalName)} size={18} color={palette.gray[600]} />
+                <Ionicons name={getDocumentIcon(file.contentType, file.originalName)} size={18} color={colors.textMuted} />
               </View>
               <View className="min-w-0 flex-1">
                 <Text className="text-caption font-medium text-fg" numberOfLines={1}>
@@ -146,68 +121,122 @@ function SubmissionBody({
                 </Text>
                 <Text className="text-micro text-fg-faint">{formatFileSize(file.size)}</Text>
               </View>
-              <Ionicons name="open-outline" size={16} color={palette.gray[400]} />
+              <Ionicons name="open-outline" size={16} color={colors.textSubtle} />
             </Pressable>
           ))}
         </View>
       ) : null}
-
-      <ReviewOutcome submission={submission} />
-    </>
+    </View>
   );
 }
 
-function SubmissionCard({
+/** The reviewer's answer, like a reply under the submission. */
+function ReviewFooter({ submission }: { submission: TaskSubmissionResponse }) {
+  if (submission.status === "PENDING") {
+    return (
+      <View className="mt-3 flex-row items-center gap-2">
+        <Ionicons name="time-outline" size={16} color={colors.warning} />
+        <Text className="text-label text-fg-soft">Waiting for a reviewer</Text>
+      </View>
+    );
+  }
+
+  const isApproved = submission.status === "APPROVED";
+  const reviewer = submission.reviewedByName ?? "A reviewer";
+
+  return (
+    <View className="mt-3 rounded-xl bg-field px-3 py-2.5">
+      <View className="flex-row items-center gap-2">
+        <Ionicons
+          name={isApproved ? "checkmark-circle" : "close-circle"}
+          size={16}
+          color={isApproved ? colors.success : colors.danger}
+        />
+        <Text className="min-w-0 flex-1 text-label text-fg-soft" numberOfLines={1}>
+          <Text className="font-semibold text-fg">{reviewer}</Text>
+          {isApproved ? " approved this" : " asked for changes"}
+        </Text>
+        {submission.reviewedAt ? (
+          <Text className="text-micro text-fg-faint">{formatSubmissionDateTime(submission.reviewedAt)}</Text>
+        ) : null}
+      </View>
+      {submission.reviewComment ? (
+        <Text className="mt-1.5 pl-6 text-caption text-fg-sub">{submission.reviewComment}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+/** Who submitted, which round, when, and the review status. */
+function SubmissionHeader({
+  submission,
+  trailing,
+}: {
+  submission: TaskSubmissionResponse;
+  trailing?: ReactNode;
+}) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <Avatar name={submission.submittedByName} size={36} />
+      <View className="min-w-0 flex-1">
+        <Text className="text-body-sm font-semibold text-fg" numberOfLines={1}>
+          {submission.submittedByName}
+        </Text>
+        <Text className="text-label text-fg-soft" numberOfLines={1}>
+          Round {submission.round} · {formatSubmissionDateTime(submission.submittedAt)}
+        </Text>
+      </View>
+      <StatusPill submission={submission} />
+      {trailing}
+    </View>
+  );
+}
+
+/** The latest round, shown in full. */
+function LatestSubmission({ submission, ...handlers }: { submission: TaskSubmissionResponse } & AttachmentHandlers) {
+  return (
+    <View>
+      <SubmissionHeader submission={submission} />
+      <SubmissionContent submission={submission} {...handlers} />
+      <ReviewFooter submission={submission} />
+    </View>
+  );
+}
+
+/** A past round: one compact line that opens to the full submission. */
+function EarlierSubmission({
   submission,
   isExpanded,
-  isCollapsible,
-  accessToken,
+  hasDivider,
   onToggle,
-  onOpenImage,
-  onOpenFile,
+  ...handlers
 }: {
   submission: TaskSubmissionResponse;
   isExpanded: boolean;
-  isCollapsible: boolean;
-  accessToken: string | null;
+  hasDivider: boolean;
   onToggle: () => void;
-  onOpenImage: (image: SubmissionFileResponse) => void;
-  onOpenFile: (file: SubmissionFileResponse) => void;
-}) {
-  const attachmentCount = submission.images.length + submission.files.length;
-
+} & AttachmentHandlers) {
   return (
-    <View className="bg-surface p-4">
+    <View className={hasDivider ? "border-t border-line-soft" : ""}>
       <Pressable
-        onPress={isCollapsible ? onToggle : undefined}
-        disabled={!isCollapsible}
-        accessibilityRole={isCollapsible ? "button" : undefined}
-        accessibilityState={isCollapsible ? { expanded: isExpanded } : undefined}
-        className="flex-row items-center gap-3"
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        accessibilityHint={isExpanded ? "Hides this round" : "Shows this round"}
+        className="py-3 active:opacity-70"
       >
-        <SubmitterAvatar name={submission.submittedByName} />
-        <View className="min-w-0 flex-1">
-          <Text className="text-body-sm font-semibold text-fg" numberOfLines={1}>
-            {submission.submittedByName}
-          </Text>
-          <Text className="text-label text-fg-soft">
-            Round {submission.round} · {formatSubmissionDateTime(submission.submittedAt)}
-            {!isExpanded && attachmentCount > 0 ? ` · ${attachmentCount} attachment${attachmentCount === 1 ? "" : "s"}` : ""}
-          </Text>
-        </View>
-        <StatusPill submission={submission} />
-        {isCollapsible ? (
-          <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={palette.gray[400]} />
-        ) : null}
-      </Pressable>
-
-      {isExpanded ? (
-        <SubmissionBody
+        <SubmissionHeader
           submission={submission}
-          accessToken={accessToken}
-          onOpenImage={onOpenImage}
-          onOpenFile={onOpenFile}
+          trailing={
+            <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.textSubtle} />
+          }
         />
+      </Pressable>
+      {isExpanded ? (
+        <View className="pb-3">
+          <SubmissionContent submission={submission} {...handlers} />
+          <ReviewFooter submission={submission} />
+        </View>
       ) : null}
     </View>
   );
@@ -218,14 +247,17 @@ type SubmissionHistoryProps = {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
+  /** Off when a tab already says "Submissions" right above. */
+  showTitle?: boolean;
 };
 
-/** Submitted work for a task: the latest round in full, earlier rounds collapsed. */
+/** Submitted work for a task: the latest round in full, earlier rounds as compact lines. */
 export function SubmissionHistory({
   submissions,
   isLoading,
   isError,
   onRetry,
+  showTitle = true,
 }: SubmissionHistoryProps) {
   const accessToken = useAuthStore((state) => state.token);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -239,21 +271,17 @@ export function SubmissionHistory({
       return next;
     });
 
+  const handlers: AttachmentHandlers = {
+    accessToken,
+    onOpenImage: setViewerImage,
+    onOpenFile: (file) => void openFile(file),
+  };
   const [latest, ...earlier] = submissions ?? [];
 
-  return (
-    <View>
-      <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-body font-semibold text-fg">Submissions</Text>
-        {submissions && submissions.length > 0 ? (
-          <View className="min-w-[22px] items-center rounded-full bg-subtle px-2 py-0.5">
-            <Text className="text-label font-semibold text-fg-sub">{submissions.length}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {isLoading ? (
-        <View className="p-4">
+  const renderBody = () => {
+    if (isLoading) {
+      return (
+        <View>
           <View className="flex-row items-center gap-3">
             <SkeletonCircle size={36} />
             <View className="flex-1 gap-1.5">
@@ -263,60 +291,67 @@ export function SubmissionHistory({
           </View>
           <SkeletonBlock height={44} className="mt-3 w-full" />
         </View>
-      ) : isError && !latest ? (
-        <View className="items-center rounded-xl bg-error-subtle px-5 py-6">
-          <Text className="text-body-sm font-semibold text-error">Couldn&apos;t load submissions</Text>
-          <Pressable
-            onPress={onRetry}
-            accessibilityRole="button"
-            className="mt-3 rounded-lg bg-surface px-4 py-2"
-          >
-            <Text className="text-label font-semibold text-error">Try again</Text>
-          </Pressable>
-        </View>
-      ) : !latest ? (
-        <View className="items-center  bg-field px-6 py-7">
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-surface">
-            <Ionicons name="cloud-upload-outline" size={22} color={palette.gray[400]} />
-          </View>
-          <Text className="mt-3 text-body-sm font-semibold text-fg">No work submitted yet</Text>
-          <Text className="mt-1 text-center text-label text-fg-soft">
-            Submissions and review feedback will appear here.
-          </Text>
-        </View>
-      ) : (
-        <View className="gap-3">
-          <SubmissionCard
-            submission={latest}
-            isExpanded
-            isCollapsible={false}
-            accessToken={accessToken}
-            onToggle={() => undefined}
-            onOpenImage={setViewerImage}
-            onOpenFile={(file) => void openFile(file)}
-          />
+      );
+    }
+    if (isError && !latest) {
+      return (
+        <StateView
+          variant="error"
+          title="Couldn't load submissions"
+          message="Check your connection and try again."
+          actionLabel="Try again"
+          onPressAction={onRetry}
+          isCompact
+        />
+      );
+    }
+    if (!latest) {
+      return (
+        <StateView
+          variant="empty"
+          icon="cloud-upload-outline"
+          title="No work submitted yet"
+          message="Submitted work and the reviewer's feedback will appear here."
+          isCompact
+        />
+      );
+    }
+    return (
+      <View className="gap-5">
+        <LatestSubmission submission={latest} {...handlers} />
 
-          {earlier.length > 0 ? (
-            <>
-              <Text className="mt-1 text-label font-semibold uppercase tracking-[1px] text-fg-faint">
-                Earlier rounds
-              </Text>
-              {earlier.map((submission) => (
-                <SubmissionCard
+        {earlier.length > 0 ? (
+          <View>
+            <Text className="mb-2 text-label font-semibold uppercase tracking-wider text-fg-faint">
+              Earlier rounds
+            </Text>
+            <View>
+              {earlier.map((submission, index) => (
+                <EarlierSubmission
                   key={submission.id}
                   submission={submission}
                   isExpanded={expandedIds.has(submission.id)}
-                  isCollapsible
-                  accessToken={accessToken}
+                  hasDivider={index > 0}
                   onToggle={() => toggle(submission.id)}
-                  onOpenImage={setViewerImage}
-                  onOpenFile={(file) => void openFile(file)}
+                  {...handlers}
                 />
               ))}
-            </>
-          ) : null}
-        </View>
-      )}
+            </View>
+          </View>
+        ) : null}
+      </View>
+    );
+  };
+
+  return (
+    <View>
+      {showTitle ? (
+        <SectionHeader
+          title="Submissions"
+          meta={submissions && submissions.length > 0 ? String(submissions.length) : undefined}
+        />
+      ) : null}
+      {renderBody()}
 
       <ImageViewerModal
         uri={viewerImage?.url ?? null}

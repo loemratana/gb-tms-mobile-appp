@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, Text, View } from "react-native";
 
-import { usePendingReviewSubmissions } from "@/features/tasks/hooks/useSubmissions";
+import { usePendingReviewCount } from "@/features/tasks/hooks/usePendingReviewCount";
 import { palette } from "@/styles";
 
 type ShortcutRowProps = {
@@ -68,9 +68,7 @@ export function DashboardShortcuts({
   onOpenTeam,
   teamSubtitle,
 }: DashboardShortcutsProps) {
-  // size 1: only the total is needed for the badge.
-  const { data: pendingPage } = usePendingReviewSubmissions({ size: 1 }, canReview);
-  const pendingCount = pendingPage?.totalElements ?? 0;
+  const { count: pendingCount } = usePendingReviewCount(canReview);
 
   return (
     <View className="overflow-hidden rounded-2xl border border-line bg-surface">

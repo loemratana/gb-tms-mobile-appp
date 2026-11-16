@@ -40,31 +40,37 @@ export const formatDate = (dateString: string): string => {
 };
 
 /** A task is overdue once its due date has passed and it's still open. */
-export function isTaskOverdue(task: Pick<Task, "status" | "dueDate">): boolean {
+export function isTaskOverdue(task: Pick<Task, "status" | "dueDate" | "isOverdue">): boolean {
+  // Prefer the server's flag: it uses the business timezone, the same rule as the late-submission check.
+  if (task.isOverdue !== undefined) return task.isOverdue;
   if (task.status === "done" || task.status === "cancelled") return false;
   return new Date(`${task.dueDate}T23:59:59`).getTime() < Date.now();
 }
 
-/** Progress shown on cards — aligned with task status lifecycle */
-export function getTaskDisplayProgress(task: {
-  status: TaskStatus;
-  progress: number;
-}): number {
-  switch (task.status) {
-    case "done":
-      return 100;
-    case "review":
-      return Math.max(task.progress, 90);
-    case "todo":
-    case "cancelled":
-      return Math.min(task.progress, 10);
-    default:
-      return task.progress;
-  }
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, Math.round(value)));
+
+/**
+ * Progress shown on cards. The server derives it (TODO 0, IN_PROGRESS/REJECTED/BLOCKED 25,
+ * IN_REVIEW 50, APPROVED/DONE 100, CANCELLED 0, or the average of the subtasks), so the app
+ * shows it as-is rather than re-deriving it from the collapsed view status.
+ */
+export function getTaskDisplayProgress(task: { progress: number }): number {
+  return clampPercent(task.progress);
 }
 
 export function isSubtask(task: Pick<Task, "parentId">): boolean {
   return Boolean(task.parentId);
+}
+
+/**
+ * The rows of a task list: a subtask renders nested inside its parent's card, so it's only dropped
+ * as a row when that parent is in the list too. Otherwise (e.g. your own copy of a group task, whose
+ * parent you aren't on) it's a row of its own. The server's `excludeNestedSubtasks` count filter
+ * applies the same rule, so dashboard numbers match the list.
+ */
+export function toListRows(tasks: Task[]): Task[] {
+  const listedIds = new Set(tasks.map((task) => task.id));
+  return tasks.filter((task) => !isSubtask(task) || !task.parentId || !listedIds.has(task.parentId));
 }
 
 export function getSubtasksForParent(tasks: Task[], parentId: string): Task[] {
@@ -86,7 +92,7 @@ function toSubtaskSummary(task: Task): TaskSubtaskSummary {
 
 export function getSubtaskWorkProgress(subtask: TaskSubtaskSummary): number {
   if (subtask.status === "done") return 100;
-  return subtask.progress;
+  return clampPercent(subtask.progress);
 }
 
 export function resolveTaskSubtasks(
@@ -106,13 +112,15 @@ export function resolveTaskSubtasks(
   }));
 }
 
+/** Average of the subtasks' progress, skipping cancelled ones — the same rule the server uses for a parent. */
 export function getSubtaskCompletionProgress(subtasks: TaskSubtaskSummary[]): number {
-  if (subtasks.length === 0) return 0;
-  const total = subtasks.reduce(
+  const countable = subtasks.filter((subtask) => subtask.status !== "cancelled");
+  if (countable.length === 0) return 0;
+  const total = countable.reduce(
     (sum, subtask) => sum + getSubtaskWorkProgress(subtask),
     0,
   );
-  return Math.round(total / subtasks.length);
+  return Math.round(total / countable.length);
 }
 
 export function getSubtaskFullTask(tasks: Task[], subtaskId: string): Task | undefined {

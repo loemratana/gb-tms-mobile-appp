@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
+
 
 import { DEFAULT_REMINDER_TIMEZONE } from "@/features/tasks/utils/timezones";
 import { useUpdateTaskReminderSettings } from "./useTaskMutations";
 import { useTaskReminderSettings } from "./useTasks";
 import { getApiErrorMessage } from "@/lib/api";
+import { toast } from "@/stores/toastStore";
 
 export const MAX_REMINDER_TIMES = 6;
 
@@ -80,7 +81,7 @@ export function useReminderSettingsForm(taskId: string | undefined): ReminderSet
       });
       return true;
     } catch (error) {
-      Alert.alert("Couldn't save reminders", getApiErrorMessage(error, "Please try again."));
+      toast.error("Couldn't save reminders", getApiErrorMessage(error, "Please try again."));
       return false;
     }
   }, [updateMutation, draft]);

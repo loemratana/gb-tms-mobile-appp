@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { Platform, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import {
   BottomSheetBackdrop,
@@ -12,7 +12,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 
-import { colors, componentRadius, palette, shadows } from "@/styles";
+import { APP_FONT_FAMILY, colors, componentRadius, palette, shadows } from "@/styles";
 
 import { IconButton } from "./IconButton";
 
@@ -24,11 +24,13 @@ import { IconButton } from "./IconButton";
 
 export function SheetBackdrop({
   closeOnPress = true,
+  onPress,
   ...props
-}: BottomSheetBackdropProps & { closeOnPress?: boolean }) {
+}: BottomSheetBackdropProps & { closeOnPress?: boolean; onPress?: () => void }) {
   return (
     <BottomSheetBackdrop
       {...props}
+      onPress={onPress}
       disappearsOnIndex={-1}
       appearsOnIndex={0}
       opacity={0.45}
@@ -38,13 +40,20 @@ export function SheetBackdrop({
   );
 }
 
-/** `backdropComponent` factory — pass `closeOnPress={false}` while a submit is in flight. */
-export function useSheetBackdrop(closeOnPress = true) {
+/**
+ * `backdropComponent` factory — pass `closeOnPress={false}` while a submit is in flight.
+ * With `onPress`, a tap calls it instead of closing (e.g. to ask before discarding a form).
+ */
+export function useSheetBackdrop(closeOnPress = true, onPress?: () => void) {
   return useCallback(
     (props: BottomSheetBackdropProps) => (
-      <SheetBackdrop {...props} closeOnPress={closeOnPress} />
+      <SheetBackdrop
+        {...props}
+        closeOnPress={closeOnPress && !onPress}
+        onPress={closeOnPress ? onPress : undefined}
+      />
     ),
-    [closeOnPress],
+    [closeOnPress, onPress],
   );
 }
 
@@ -118,15 +127,35 @@ export function ExpandableSheetBackground({ style }: BottomSheetBackgroundProps)
 export function ExpandableSheetHandle() {
   const { animatedIndex } = useBottomSheet();
 
-  const handleStyle = useAnimatedStyle(() => ({
+  // The strip paints the sheet colour itself (rounded corners that flatten at full screen) so the
+  // top of the sheet is never see-through, whatever the background component draws.
+  const stripStyle = useAnimatedStyle(() => {
+    const radius = interpolate(animatedIndex.value, [0, 1], [componentRadius.sheet, 0], Extrapolation.CLAMP);
+    return { borderTopLeftRadius: radius, borderTopRightRadius: radius };
+  });
+  const barStyle = useAnimatedStyle(() => ({
     opacity: interpolate(animatedIndex.value, [0, 0.75], [1, 0], Extrapolation.CLAMP),
   }));
 
   return (
-    <Animated.View style={[styles.expandableHandleWrap, handleStyle]}>
-      <View style={styles.expandableHandleBar} />
+    <Animated.View style={[styles.expandableHandleWrap, { backgroundColor: colors.card }, stripStyle]}>
+      <Animated.View style={[styles.expandableHandleBar, barStyle]} />
     </Animated.View>
   );
+}
+
+/**
+ * Header area of an expandable sheet: as the sheet reaches full screen it gains top padding equal
+ * to the status bar / notch (`topInset`), so the title never sits underneath it.
+ */
+export function ExpandableSheetHeader({ topInset, children }: { topInset: number; children: ReactNode }) {
+  const { animatedIndex } = useBottomSheet();
+
+  const containerStyle = useAnimatedStyle(() => ({
+    paddingTop: interpolate(animatedIndex.value, [0, 1], [0, topInset], Extrapolation.CLAMP),
+  }));
+
+  return <Animated.View style={containerStyle}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
@@ -137,12 +166,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
+    fontFamily: APP_FONT_FAMILY,
     fontSize: 17,
     fontWeight: "700",
     color: colors.text,
   },
   subtitle: {
     marginTop: 2,
+    fontFamily: APP_FONT_FAMILY,
     fontSize: 12,
     color: colors.textMuted,
   },

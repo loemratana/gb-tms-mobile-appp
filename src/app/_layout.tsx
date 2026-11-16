@@ -6,6 +6,7 @@ import "@/lib/nativewind-interop";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, type ReactNode } from "react";
@@ -13,6 +14,8 @@ import { ActivityIndicator, View } from "react-native";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { ToastHost } from "@/components/ui/ToastHost";
+import { APP_FONTS } from "@/config/fonts";
 import { queryClient } from "@/config/query.config";
 import { useRouteGuards } from "@/features/auth/hooks/useRouteGuards";
 import {
@@ -25,6 +28,9 @@ import { colors, themeVars } from "@/styles";
 function AuthBootstrap({ children }: { children: ReactNode }) {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const hydrate = useAuthStore((s) => s.hydrate);
+  // The app font. If it fails to load, carry on with the system font rather than blocking the app.
+  const [areFontsLoaded, fontError] = useFonts(APP_FONTS);
+  const isFontReady = areFontsLoaded || Boolean(fontError);
 
   useEffect(() => {
     void hydrate();
@@ -41,7 +47,7 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
     }
   }, [isHydrated]);
 
-  if (!isHydrated) {
+  if (!isHydrated || !isFontReady) {
     return (
       <View
         style={{
@@ -97,6 +103,8 @@ function RootLayout() {
                 <GuardedStack />
               </AuthBootstrap>
             </BottomSheetModalProvider>
+            {/* After the sheets, so success / error toasts draw on top of them. */}
+            <ToastHost />
           </View>
         </GestureHandlerRootView>
       </SafeAreaProvider>

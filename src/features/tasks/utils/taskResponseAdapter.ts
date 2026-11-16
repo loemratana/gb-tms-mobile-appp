@@ -115,5 +115,6 @@ export function mapTaskResponseToEmployeeTask(response: TaskResponse): Task {
     activities: deriveActivities(response),
     commentCount: response.commentCount ?? response.comments?.length ?? 0,
     attachmentCount: response.attachmentCount ?? response.attachments?.length ?? 0,
+    isOverdue: response.overdue,
   };
 }

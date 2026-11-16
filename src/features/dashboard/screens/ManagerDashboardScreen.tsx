@@ -13,17 +13,19 @@ import {
 } from "@/features/dashboard/components/analytics/ManagerAnalyticsBottomSheet";
 import { DashboardShortcuts } from "@/features/dashboard/components/DashboardShortcuts";
 import { ManagerDashboardSkeleton } from "@/features/dashboard/components/ManagerDashboardSkeleton";
-import { TaskStatisticsCard } from "@/features/dashboard/components/TaskStatisticsCard";
+import { MyWorkSection } from "@/features/dashboard/components/MyWorkSection";
+import { ReviewsWaitingCard } from "@/features/dashboard/components/ReviewsWaitingCard";
+import { useMyWorkTasks } from "@/features/dashboard/hooks/useMyWorkTasks";
 import { TaskStatusStats } from "@/features/tasks/components/shared/TaskStatusStats";
 import { TopPerformersModal } from "@/features/dashboard/components/TopPerformersModal";
-import { useTasksPerMonth } from "@/features/dashboard/hooks/useTasksPerMonth";
 import {
   toTopPerformers,
   type TopPerformer,
 } from "@/features/dashboard/utils/topPerformers";
+import { usePendingReviewCount } from "@/features/tasks/hooks/usePendingReviewCount";
 import { useManagerAssignedKpi, useTaskCounts } from "@/features/tasks/hooks/useTasks";
 import { toTaskStatusCounts } from "@/features/tasks/utils/taskStatusCounts";
-import type { StatusFilter } from "@/features/tasks/types/taskView.types";
+import type { StatusFilter, Task } from "@/features/tasks/types/taskView.types";
 import { useCurrentUser } from "@/features/users/hooks/useUsers";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 
@@ -43,13 +45,6 @@ export default function ManagerDashboardScreen() {
     [assignedKpi],
   );
 
-  // Monthly chart is counted on the server — a fetched page would cap it at 200 rows.
-  const tasksPerMonth = useTasksPerMonth({ assignedById }, Boolean(assignedById));
-  const {
-    isLoading: isLoadingTasks,
-    isError: isTasksError,
-    refetch: refetchTasks,
-  } = tasksPerMonth;
   // Overview numbers come from the server: counting the fetched page would stop at its 200-row cap.
   const {
     data: taskCounts,
@@ -57,10 +52,15 @@ export default function ManagerDashboardScreen() {
     isError: isCountsError,
     refetch: refetchCounts,
   } = useTaskCounts({ assignedById, topLevelOnly: true }, Boolean(assignedById));
+  const { count: pendingReviewCount, refetch: refetchPendingReviews } = usePendingReviewCount();
+  // Managers get tasks too; their Tasks tab only lists what they handed out.
+  const myWork = useMyWorkTasks(currentUser?.id);
+  const { refetch: refetchMyWork } = myWork;
   const refetchDashboard = useCallback(() => {
-    refetchTasks();
     void refetchCounts();
-  }, [refetchTasks, refetchCounts]);
+    refetchPendingReviews();
+    refetchMyWork();
+  }, [refetchCounts, refetchPendingReviews, refetchMyWork]);
   useRefetchOnFocus(refetchDashboard);
   const statusCounts = useMemo(() => toTaskStatusCounts(taskCounts), [taskCounts]);
 
@@ -79,6 +79,14 @@ export default function ManagerDashboardScreen() {
     });
   };
 
+  const openReviewQueue = () => {
+    router.push("/(manager)/reviews");
+  };
+
+  const openTask = (task: Task) => {
+    router.push({ pathname: "/(manager)/tasks/[id]", params: { id: task.id } });
+  };
+
   const openTeamScreen = () => {
     router.push("/(manager)/team");
   };
@@ -88,7 +96,7 @@ export default function ManagerDashboardScreen() {
     router.push({ pathname: "/(manager)/(tabs)/tasks", params: { status } });
   };
 
-  const isLoadingDashboard = isLoadingUser || isLoadingTasks || isLoadingCounts;
+  const isLoadingDashboard = isLoadingUser || isLoadingCounts;
 
   return (
     <>
@@ -104,7 +112,7 @@ export default function ManagerDashboardScreen() {
           <ManagerDashboardSkeleton />
         ) : (
           <View className="gap-6">
-            {isTasksError || isCountsError ? (
+            {isCountsError ? (
               <StateView
                 variant="error"
                 title="Couldn't load your tasks"
@@ -119,28 +127,36 @@ export default function ManagerDashboardScreen() {
                 <TaskStatusStats counts={statusCounts} onPressStatus={openTasksScreen} />
               </View>
             )}
+            {pendingReviewCount > 0 ? (
+              <ReviewsWaitingCard count={pendingReviewCount} onPress={openReviewQueue} />
+            ) : null}
             <DashboardShortcuts
               canReview
-              onOpenReviewQueue={() => router.push("/(manager)/reviews")}
+              onOpenReviewQueue={openReviewQueue}
               onOpenMySubmissions={() => router.push("/(manager)/submissions")}
               onOpenTeam={openTeamScreen}
               teamSubtitle="Your direct reports and department"
             />
-            {isTasksError ? null : (
-              <TaskStatisticsCard
-                year={tasksPerMonth.year}
-                months={tasksPerMonth.months}
-                currentMonth={tasksPerMonth.currentMonth}
-                isCurrentYear={tasksPerMonth.isCurrentYear}
-                onPreviousYear={tasksPerMonth.goToPreviousYear}
-                onNextYear={tasksPerMonth.goToNextYear}
-                onCurrentYear={tasksPerMonth.goToCurrentYear}
-              />
-            )}
             <TeamPreview
               onSeeAll={openTeamScreen}
               onMemberPress={openTeamMember}
             />
+            {myWork.isError ? (
+              <StateView
+                variant="error"
+                title="Couldn't load your own tasks"
+                message="Check your connection and try again."
+                actionLabel="Try again"
+                onPressAction={myWork.refetch}
+                isCompact
+              />
+            ) : myWork.total > 0 ? (
+              <MyWorkSection
+                tasks={myWork.tasks}
+                onTaskPress={openTask}
+                onSeeAll={() => router.push("/(manager)/my-tasks")}
+              />
+            ) : null}
           </View>
         )}
       </Screen>

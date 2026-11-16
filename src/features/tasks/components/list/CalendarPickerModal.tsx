@@ -3,7 +3,7 @@ import { Calendar, type DateData } from "react-native-calendars";
 import { FullWindowOverlay } from "react-native-screens";
 
 import { IconButton } from "@/components/ui/IconButton";
-import { colors, componentRadius } from "@/styles";
+import { APP_FONT_FAMILY, colors, componentRadius } from "@/styles";
 
 type CalendarPickerModalProps = {
   visible: boolean;
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
+    fontFamily: APP_FONT_FAMILY,
     fontSize: 15,
     fontWeight: "600",
     color: colors.text,

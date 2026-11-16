@@ -59,7 +59,7 @@ export default function ForgotPasswordScreen() {
             />
           </View>
 
-          <Text className="mt-5 text-[24px] font-bold text-fg">
+          <Text className="mt-5 font-sans text-[24px] font-bold text-fg">
             {isEmailStep ? "Forgot your password?" : "Check your email"}
           </Text>
           <Text className="mt-2 text-body text-fg-soft">

@@ -2,10 +2,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import type { ComponentProps } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { isImageMime, type WorkAttachment } from "@/features/tasks/types/workUpdate.types";
 import { palette } from "@/styles";
+import { toast } from "@/stores/toastStore";
 
 type AttachmentUploadAreaProps = {
   onAdd: (files: WorkAttachment[]) => void;
@@ -63,7 +64,7 @@ export function AttachmentUploadArea({ onAdd, isDisabled = false }: AttachmentUp
   const pickPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to attach images.");
+      toast.warning("Permission needed", "Allow photo library access to attach images.");
       return;
     }
 
@@ -89,7 +90,7 @@ export function AttachmentUploadArea({ onAdd, isDisabled = false }: AttachmentUp
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow camera access to take a photo.");
+      toast.warning("Permission needed", "Allow camera access to take a photo.");
       return;
     }
 
@@ -135,7 +136,7 @@ export function AttachmentUploadArea({ onAdd, isDisabled = false }: AttachmentUp
         ),
       );
     } catch {
-      Alert.alert("Couldn't open files", "The file picker could not be opened.");
+      toast.error("Couldn't open files", "The file picker could not be opened.");
     }
   };
 

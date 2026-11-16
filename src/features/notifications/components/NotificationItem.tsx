@@ -80,7 +80,7 @@ export function NotificationItem({ notification, onPress, onLongPress }: Notific
 
       <View className="min-w-0 flex-1">
         <View className="flex-row items-start gap-2">
-          <Text className="flex-1 text-body-sm leading-5 text-fg-sub" numberOfLines={2}>
+          <Text className="flex-1 text-body-sm text-fg-sub" numberOfLines={2}>
             <Text className="font-semibold text-fg">{notification.sender}</Text>{" "}
             {actionText.charAt(0).toLowerCase() + actionText.slice(1)}
           </Text>
@@ -89,7 +89,7 @@ export function NotificationItem({ notification, onPress, onLongPress }: Notific
           </Text>
         </View>
 
-        <Text className="mt-0.5 text-caption leading-[18px] text-fg-soft" numberOfLines={2}>
+        <Text className="mt-0.5 text-caption text-fg-soft" numberOfLines={2}>
           {contentText}
         </Text>
       </View>

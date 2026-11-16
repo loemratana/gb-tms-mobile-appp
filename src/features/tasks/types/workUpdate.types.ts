@@ -12,6 +12,8 @@ export type WorkAttachment = {
 export type WorkUpdatePayload = {
   /** What was done — sent as the submission's `note`. */
   note: string;
+  /** Why the work is late; required when the task is past its due date. */
+  lateReason?: string;
   attachments: WorkAttachment[];
 };
 

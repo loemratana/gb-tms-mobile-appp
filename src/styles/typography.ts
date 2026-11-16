@@ -2,11 +2,18 @@ import { TextStyle } from "react-native";
 
 import { colors } from "./colors";
 
+/**
+ * The app font: Kantumruy Pro, made for Khmer and Latin together, so both scripts share one look and
+ * line height on iOS and Android (instead of each phone's own Khmer font). Loaded as one family
+ * with several weights (src/config/fonts.ts), so `fontWeight` / `font-semibold` pick the right file.
+ */
+export const APP_FONT_FAMILY = "Kantumruy Pro";
+
 export const fontFamily = {
-  regular: undefined,
-  medium: undefined,
-  semibold: undefined,
-  bold: undefined,
+  regular: APP_FONT_FAMILY,
+  medium: APP_FONT_FAMILY,
+  semibold: APP_FONT_FAMILY,
+  bold: APP_FONT_FAMILY,
 } as const;
 
 export const fontSize = {

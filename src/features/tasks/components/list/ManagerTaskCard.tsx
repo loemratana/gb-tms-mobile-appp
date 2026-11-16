@@ -10,7 +10,7 @@ import type { Task, TaskSubtaskSummary } from "@/features/tasks/types/taskView.t
 import {
   getPriorityLabel,
   getStatusLabel,
-  getSubtaskCompletionProgress,
+  getTaskDisplayProgress,
   isTaskOverdue,
 } from "@/features/tasks/utils/task.utils";
 import { priorityTone } from "@/styles";
@@ -33,10 +33,8 @@ export const ManagerTaskCard = memo(function ManagerTaskCard({
   commentCount,
   attachmentCount,
 }: ManagerTaskCardProps) {
-  const progress = Math.max(
-    0,
-    Math.min(100, subtasks.length > 0 ? getSubtaskCompletionProgress(subtasks) : task.progress),
-  );
+  // The server already averages subtasks (and treats an approved/done parent as 100), so use its value.
+  const progress = getTaskDisplayProgress(task);
   const isOverdue = isTaskOverdue(task);
 
   return (
@@ -51,11 +49,11 @@ export const ManagerTaskCard = memo(function ManagerTaskCard({
         <Badge label={getPriorityLabel(task.priority)} tone={priorityTone[task.priority]} icon="flag" />
       </View>
 
-      <Text className="mt-3 text-headline font-semibold leading-[22px] text-fg" numberOfLines={2}>
+      <Text className="mt-3 py-0.5 text-headline font-semibold text-fg" numberOfLines={2}>
         {task.title}
       </Text>
       {task.description ? (
-        <Text className="mt-1 text-caption leading-[18px] text-fg-soft" numberOfLines={1}>
+        <Text className="mt-1 text-caption text-fg-soft" numberOfLines={1}>
           {task.description}
         </Text>
       ) : null}

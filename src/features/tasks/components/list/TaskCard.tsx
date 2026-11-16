@@ -58,13 +58,13 @@ export const TaskCard = memo(function TaskCard({
       </View>
 
       <Text
-        className={`mt-3 text-headline font-semibold leading-[22px] ${isClosed ? "text-fg-soft" : "text-fg"}`}
+        className={`mt-3 py-0.5 text-headline font-semibold ${isClosed ? "text-fg-soft" : "text-fg"}`}
         numberOfLines={2}
       >
         {task.title}
       </Text>
       {task.description ? (
-        <Text className="mt-1 text-caption leading-[18px] text-fg-soft" numberOfLines={2}>
+        <Text className="mt-1 text-caption text-fg-soft" numberOfLines={2}>
           {task.description}
         </Text>
       ) : null}

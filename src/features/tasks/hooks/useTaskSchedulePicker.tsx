@@ -5,10 +5,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 
 import { ModalSheet } from "@/components/ui/ModalSheet";
-import type { ScheduleValues } from "@/features/tasks/components/create/TaskScheduleFields";
 import { colors, isDarkMode } from "@/styles";
 
 export type PickerTarget = "startDate" | "endDate" | "startTime" | "endTime";
+
+/** Current values, so each picker opens on what's already chosen. Times are "HH:mm", dates "YYYY-MM-DD". */
+export type SchedulePickerValues = {
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
+type SchedulePickerOptions = {
+  /** Earliest pickable date, e.g. today for task dates the API requires to be today or later. */
+  minimumDate?: Date;
+};
 export type ScheduleFieldPickHandler = (target: PickerTarget, value: string) => void;
 
 const PICKER_SPINNER_HEIGHT = 216;
@@ -59,8 +71,9 @@ function formatPickerValue(target: PickerTarget, date: Date) {
 }
 
 export function useTaskSchedulePicker(
-  values: ScheduleValues,
+  values: SchedulePickerValues,
   onPick: ScheduleFieldPickHandler,
+  options: SchedulePickerOptions = {},
 ) {
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -105,10 +118,12 @@ export function useTaskSchedulePicker(
   const pickerMode: "date" | "time" =
     pickerTarget?.includes("Time") ? "time" : "date";
   const isDatePicker = pickerTarget === "startDate" || pickerTarget === "endDate";
-  const dateMinimum =
-    pickerTarget === "endDate" && values.startDate
-      ? parseDateValue(values.startDate)
-      : undefined;
+  // The end date can't be before the start; neither can be before `minimumDate`.
+  const startMinimum = options.minimumDate;
+  const endFloor = values.startDate ? parseDateValue(values.startDate) : undefined;
+  const endMinimum =
+    endFloor && startMinimum ? (endFloor > startMinimum ? endFloor : startMinimum) : (endFloor ?? startMinimum);
+  const dateMinimum = pickerTarget === "endDate" ? endMinimum : pickerTarget === "startDate" ? startMinimum : undefined;
 
   return {
     openPicker,

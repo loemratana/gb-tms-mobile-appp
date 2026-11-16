@@ -71,4 +71,6 @@ export interface Task {
   activities?: TaskActivity[];
   commentCount?: number;
   attachmentCount?: number;
+  /** The server's overdue flag (business timezone); undefined from older servers. */
+  isOverdue?: boolean;
 }

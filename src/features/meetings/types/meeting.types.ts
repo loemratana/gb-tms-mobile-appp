@@ -81,6 +81,41 @@ export type AvailableRoomsParams = {
   minCapacity?: number;
 };
 
+/** GET /rooms/schedule. "HH:mm" in the business zone; a meeting crossing midnight is cut at 00:00 / 23:59. */
+export type RoomBusySlot = {
+  bookingId: string;
+  title: string;
+  organizerName: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type RoomFreeSlot = { startTime: string; endTime: string };
+
+export type RoomDaySchedule = {
+  date: string;
+  busy: RoomBusySlot[];
+  /** Gaps within workdayStart-workdayEnd. */
+  free: RoomFreeSlot[];
+};
+
+export type RoomCalendarResponse = {
+  from: string;
+  to: string;
+  workdayStart: string;
+  workdayEnd: string;
+  rooms: { room: RoomSummary; status: RoomStatus; days: RoomDaySchedule[] }[];
+};
+
+export type RoomScheduleParams = {
+  from: string;
+  /** Inclusive; defaults to `from`. At most 31 days. */
+  to?: string;
+  /** One room (any status); otherwise every active room. */
+  roomId?: string;
+  minCapacity?: number;
+};
+
 export type BookingStatus = "CONFIRMED" | "CANCELLED";
 export type BookingTimeStatus = "UPCOMING" | "IN_PROGRESS" | "COMPLETED";
 

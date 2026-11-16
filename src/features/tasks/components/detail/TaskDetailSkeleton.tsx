@@ -24,7 +24,7 @@ export function TaskDetailSkeleton() {
 
       <View className="mt-6">
         <SkeletonBlock height={14} className="mb-3 w-1/4" />
-        <View className="rounded-2xl border border-line px-4 py-1">
+        <View>
           {DETAIL_ROWS.map((row) => (
             <View
               key={row}

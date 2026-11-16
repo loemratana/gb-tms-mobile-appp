@@ -57,7 +57,7 @@ export function ReminderTimeGrid({
               className="h-[76px] w-[48.5%] justify-center rounded-2xl border border-line bg-surface px-4 active:bg-field"
             >
               <View className="flex-row items-baseline gap-1">
-                <Text className="text-[26px] font-bold tracking-tight text-fg">{clock}</Text>
+                <Text className="font-sans text-[26px] font-bold tracking-tight text-fg">{clock}</Text>
                 <Text className="text-caption font-semibold text-fg-soft">{period}</Text>
               </View>
               <Text className="text-micro text-fg-faint">Every day</Text>

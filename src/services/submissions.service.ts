@@ -24,6 +24,7 @@ export async function submitTaskWork(
 ): Promise<TaskSubmissionResponse> {
   const formData = new FormData();
   if (request.note) formData.append("note", request.note);
+  if (request.lateReason) formData.append("lateReason", request.lateReason);
   request.images.forEach((image) => appendFile(formData, "images", image));
   request.files.forEach((file) => appendFile(formData, "files", file));
 

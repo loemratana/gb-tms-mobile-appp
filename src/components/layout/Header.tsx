@@ -77,7 +77,7 @@ export function HeaderProfile({
             <Ionicons name="hand-left" size={16} color={colors.brand} />
           </Animated.View>
         </View>
-        <Text numberOfLines={1} className="text-[19px] font-bold text-fg">
+        <Text numberOfLines={1} className="font-sans text-[19px] font-bold text-fg">
           {userName}
         </Text>
       </View>

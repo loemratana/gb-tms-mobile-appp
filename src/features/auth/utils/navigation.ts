@@ -19,6 +19,22 @@ export function getTaskDetailPathForRole(role: UserRole, taskId: string): Href {
     : `/(employee)/tasks/${taskId}`;
 }
 
+/** Full-screen comment thread of a task; `focus` opens it with the message box ready to type in. */
+export function getTaskCommentsPathForRole(
+  role: UserRole,
+  taskId: string,
+  options: { focus?: boolean } = {},
+): Href {
+  const area = canAccessManagerArea(role) ? "(manager)" : "(employee)";
+  return `/${area}/task-comments/${taskId}${options.focus ? "?focus=1" : ""}` as Href;
+}
+
+/** Full-screen Submit Work form for a task. */
+export function getSubmitWorkPathForRole(role: UserRole, taskId: string): Href {
+  const area = canAccessManagerArea(role) ? "(manager)" : "(employee)";
+  return `/${area}/submit-work/${taskId}` as Href;
+}
+
 export function formatRoleLabel(role: UserRole): string {
   return role.charAt(0) + role.slice(1).toLowerCase();
 }

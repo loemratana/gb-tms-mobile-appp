@@ -9,7 +9,6 @@ import type {
   TaskAssignmentResponse,
   TaskCommentResponse,
   TaskCountsResponse,
-  TaskMonthlyCountsResponse,
   TaskReminderSettingsResponse,
   TaskResponse,
   TaskSearchParams,
@@ -23,17 +22,6 @@ export async function getTaskCounts(
   params: Omit<TaskSearchParams, "page" | "size" | "sort"> = {}
 ): Promise<TaskCountsResponse> {
   const { data } = await api.get<ApiEnvelope<TaskCountsResponse>>("/tasks/counts", { params });
-  return data.data;
-}
-
-/** Top-level, non-cancelled tasks per due month of `year`; same visibility and filters as `GET /tasks`. */
-export async function getTaskMonthlyCounts(
-  year: number,
-  params: Omit<TaskSearchParams, "page" | "size" | "sort" | "taskStatus" | "overdue" | "topLevelOnly"> = {}
-): Promise<TaskMonthlyCountsResponse> {
-  const { data } = await api.get<ApiEnvelope<TaskMonthlyCountsResponse>>("/tasks/counts/by-due-month", {
-    params: { ...params, year },
-  });
   return data.data;
 }
 

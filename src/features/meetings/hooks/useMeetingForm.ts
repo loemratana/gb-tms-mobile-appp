@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
+import { usePreventRemove, useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Alert } from "react-native";
@@ -14,7 +14,7 @@ import {
   useRooms,
   useUpdateBooking,
 } from "@/features/meetings/hooks/useMeetings";
-import { meetingFormSchema, type MeetingFormValues } from "@/features/meetings/schemas/meetingForm.schema";
+import { createMeetingFormSchema, type MeetingFormValues } from "@/features/meetings/schemas/meetingForm.schema";
 import type {
   BookingLocationInput,
   BookingPreviewRequest,
@@ -37,6 +37,7 @@ import { useCurrentUser } from "@/features/users/hooks/useUsers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getApiErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "@/stores/toastStore";
 
 const DEFAULT_DURATION_MINUTES = 60;
 const DEFAULT_START = "09:00";
@@ -166,15 +167,36 @@ export function useMeetingForm(params: MeetingFormParams, booking?: BookingRespo
   const createMutation = useCreateBooking();
   const updateMutation = useUpdateBooking();
 
+  // Editing may keep a slot that has already started; only a new or moved start must be in the future.
+  const schema = useMemo(
+    () =>
+      createMeetingFormSchema(
+        booking ? { date: booking.date, startTime: booking.startTime.slice(0, 5) } : undefined,
+      ),
+    [booking],
+  );
+
   const {
     control,
     handleSubmit,
     setValue,
     getValues,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<MeetingFormValues>({
-    resolver: zodResolver(meetingFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: initialValues(params, booking),
+  });
+
+  // Leaving with unsaved changes (back button, swipe back, Android back) asks first.
+  usePreventRemove(isDirty && !isSubmitting, ({ repeat }) => {
+    Alert.alert(
+      booking ? "Discard your changes?" : "Discard this meeting?",
+      booking ? "Your edits to this meeting won't be saved." : "The meeting hasn't been created yet.",
+      [
+        { text: "Keep editing", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: repeat },
+      ],
+    );
   });
 
   const values = useWatch({ control }) as MeetingFormValues;
@@ -223,9 +245,15 @@ export function useMeetingForm(params: MeetingFormParams, booking?: BookingRespo
     },
     [getValues, setField],
   );
+  // Meetings can't start in the past, so the calendar starts at today.
+  const today = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, []);
   const { openPicker, overlayProps } = useTaskSchedulePicker(
-    { scheduleType: "both", startDate: values.date, startTime: values.startTime, endTime: values.endTime },
+    { startDate: values.date, startTime: values.startTime, endTime: values.endTime },
     handlePick,
+    { minimumDate: today },
   );
 
   // ---- Room availability for the chosen slot (room meetings only) ----
@@ -285,17 +313,24 @@ export function useMeetingForm(params: MeetingFormParams, booking?: BookingRespo
           router.replace(getMeetingDetailPathForRole(role, saved.id));
         }
         const title = bookingId ? "Meeting updated" : "Meeting created";
-        const warnings = saved.warnings?.length ? `\n\n${saved.warnings.join("\n")}` : "";
         const where = describeMeetingPlace(getMeetingPlace(saved));
-        Alert.alert(title, `"${saved.title}" ${where}, ${saved.startTime}–${saved.endTime}.${warnings}`);
+        const summary = `"${saved.title}" ${where}, ${saved.startTime}–${saved.endTime}.`;
+        if (saved.warnings?.length) {
+          // Clashes or capacity notes need reading, so they stay in a dialog.
+          Alert.alert(title, `${summary}\n\n${saved.warnings.join("\n")}`);
+        } else {
+          toast.success(title, summary);
+        }
       } catch (error) {
-        Alert.alert(bookingId ? "Couldn't update meeting" : "Couldn't create the meeting", getApiErrorMessage(error));
+        toast.error(bookingId ? "Couldn't update meeting" : "Couldn't create the meeting", getApiErrorMessage(error));
       }
     })();
   }, [handleSubmit, bookingId, updateMutation, createMutation, role, router]);
 
   return {
     isEdit: Boolean(booking),
+    /** Something differs from what was loaded (or from the blank form). */
+    isDirty,
     control,
     errors,
     values,

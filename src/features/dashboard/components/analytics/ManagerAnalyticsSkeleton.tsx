@@ -2,20 +2,17 @@ import { View } from "react-native";
 
 import { SkeletonBlock, SkeletonCircle } from "@/components/ui/Skeleton";
 
-/** Loading placeholder shaped like the analytics body — KPI grid, donut, and bar chart. */
+/** Loading placeholder shaped like the analytics report: KPI tiles, status bar, workload rows. */
 export function ManagerAnalyticsSkeleton() {
   return (
-    <View className="gap-4">
+    <View className="gap-7">
       <View className="gap-3">
         {[0, 1].map((row) => (
           <View key={row} className="flex-row gap-3">
-            {[0, 1].map((col) => (
-              <View
-                key={col}
-                className="flex-1 gap-2 rounded-2xl border border-line bg-surface p-4"
-              >
-                <SkeletonBlock width={28} height={28} radius={14} />
-                <SkeletonBlock height={18} className="w-1/2" />
+            {[0, 1].map((column) => (
+              <View key={column} className="flex-1 gap-2 rounded-2xl bg-field px-3.5 py-3">
+                <SkeletonBlock height={12} className="w-1/2" />
+                <SkeletonBlock height={24} className="w-1/3" />
                 <SkeletonBlock height={11} className="w-2/3" />
               </View>
             ))}
@@ -23,14 +20,24 @@ export function ManagerAnalyticsSkeleton() {
         ))}
       </View>
 
-      <View className="items-center gap-3 rounded-2xl border border-line bg-surface p-5">
-        <SkeletonCircle size={120} />
-        <SkeletonBlock height={12} className="w-1/3" />
+      <View className="gap-3">
+        <SkeletonBlock height={16} className="w-2/5" />
+        <SkeletonBlock height={12} radius={6} className="w-full" />
+        {[0, 1, 2].map((row) => (
+          <SkeletonBlock key={row} height={14} className="w-full" />
+        ))}
       </View>
 
-      <View className="flex-row items-end justify-between gap-2 rounded-2xl border border-line bg-surface p-5">
-        {[60, 100, 75, 45, 90].map((barHeight, index) => (
-          <SkeletonBlock key={index} width={28} height={barHeight} radius={8} />
+      <View className="gap-3">
+        <SkeletonBlock height={16} className="w-1/3" />
+        {[0, 1, 2].map((row) => (
+          <View key={row} className="flex-row items-center gap-3">
+            <SkeletonCircle size={36} />
+            <View className="flex-1 gap-1.5">
+              <SkeletonBlock height={13} className="w-1/2" />
+              <SkeletonBlock height={6} radius={3} className="w-full" />
+            </View>
+          </View>
         ))}
       </View>
     </View>

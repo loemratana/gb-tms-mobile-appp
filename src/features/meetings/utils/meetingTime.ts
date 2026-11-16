@@ -56,31 +56,11 @@ export function formatDateKey(dateKey: string): string {
   });
 }
 
-/** Sunday-to-Saturday week containing `date`, matching the week strip in the design. */
+/** Monday-to-Sunday week containing `date`, the same week start as the Calendar tab's month grid. */
 export function getWeekDays(date: Date): Date[] {
-  const sunday = addDays(date, -date.getDay());
-  return Array.from({ length: 7 }, (_, index) => addDays(sunday, index));
-}
-
-export type MonthOption = { key: string; label: string; date: Date };
-
-/** The selected month with a few months either side, for the month chips. */
-export function getMonthOptions(selected: Date, before = 2, after = 4): MonthOption[] {
-  return Array.from({ length: before + after + 1 }, (_, index) => {
-    const date = new Date(selected.getFullYear(), selected.getMonth() - before + index, 1);
-    const sameYear = date.getFullYear() === new Date().getFullYear();
-    return {
-      key: `${date.getFullYear()}-${date.getMonth()}`,
-      label: date.toLocaleDateString("en-US", sameYear ? { month: "long" } : { month: "short", year: "numeric" }),
-      date,
-    };
-  });
-}
-
-/** Keeps the day-of-month when switching months, clamped to the month's length. */
-export function moveToMonth(selected: Date, month: Date): Date {
-  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  return new Date(month.getFullYear(), month.getMonth(), Math.min(selected.getDate(), lastDay));
+  const daysSinceMonday = (date.getDay() + 6) % 7;
+  const monday = addDays(date, -daysSinceMonday);
+  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
 }
 
 export function isPastDay(date: Date): boolean {

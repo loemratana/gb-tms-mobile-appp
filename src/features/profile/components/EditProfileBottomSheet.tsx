@@ -1,7 +1,7 @@
 import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { Controller } from "react-hook-form";
-import { Alert, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AvatarPickerField } from "./AvatarPickerField";
 import { useEditProfileForm } from "@/features/profile/hooks/useEditProfileForm";
+import { toast } from "@/stores/toastStore";
 
 export type EditProfileBottomSheetRef = {
   present: () => void;
@@ -45,7 +46,7 @@ export const EditProfileBottomSheet = forwardRef<EditProfileBottomSheetRef>(func
     const isSaved = await save();
     if (isSaved) {
       sheetRef.current?.dismiss();
-      Alert.alert("Profile updated", "Your changes have been saved.");
+      toast.success("Profile updated", "Your changes have been saved.");
     }
   };
 

@@ -5,7 +5,6 @@ import {
   getManagerAssignedKpi,
   getTaskById,
   getTaskCounts,
-  getTaskMonthlyCounts,
   getTaskReminderSettings,
   listTaskComments,
   searchTasks,
@@ -26,8 +25,6 @@ export const taskKeys = {
   /** Aggregates (dashboards). Grouped so one invalidation refreshes them all. */
   summaries: () => [...taskKeys.all, "summary"] as const,
   counts: (params: TaskSearchParams) => [...taskKeys.summaries(), "counts", params] as const,
-  monthlyCounts: (year: number, params: TaskSearchParams) =>
-    [...taskKeys.summaries(), "monthly-counts", year, params] as const,
   managerAssignedKpi: () => [...taskKeys.summaries(), "assigned-kpi"] as const,
 };
 
@@ -42,15 +39,6 @@ export function useTaskCounts(params: TaskSearchParams, enabled = true) {
   return useQuery({
     queryKey: taskKeys.counts(params),
     queryFn: () => getTaskCounts(params),
-    placeholderData: keepPreviousData,
-    enabled,
-  });
-}
-
-export function useTaskMonthlyCounts(year: number, params: TaskSearchParams, enabled = true) {
-  return useQuery({
-    queryKey: taskKeys.monthlyCounts(year, params),
-    queryFn: () => getTaskMonthlyCounts(year, params),
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -87,11 +75,17 @@ export function useTask(id: string | undefined) {
   });
 }
 
-export function useTaskComments(id: string | undefined) {
+/** How often an open comment thread checks for new messages from the other people on the task. */
+const COMMENT_POLL_MS = 15_000;
+
+export function useTaskComments(id: string | undefined, pollMs: number = COMMENT_POLL_MS) {
   return useQuery({
     queryKey: taskKeys.comments(id ?? ""),
     queryFn: () => listTaskComments(id as string),
     enabled: Boolean(id),
+    // No push channel for comments yet, so poll while the screen is open (paused in the background).
+    refetchInterval: pollMs,
+    refetchIntervalInBackground: false,
   });
 }
 

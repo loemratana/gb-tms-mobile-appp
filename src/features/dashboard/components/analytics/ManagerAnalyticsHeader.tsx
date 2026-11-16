@@ -1,44 +1,33 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, Text, View } from "react-native";
 
+import { colors } from "@/styles";
+
 type ManagerAnalyticsHeaderProps = {
-  completionRate: number;
-  pendingTasks?: number;
-  hasData: boolean;
-  onSeeAll?: () => void;
+  onSeeTopPerformers?: () => void;
 };
 
-export function ManagerAnalyticsHeader({
-  completionRate,
-  pendingTasks,
-  hasData,
-  onSeeAll,
-}: ManagerAnalyticsHeaderProps) {
+/** Sheet title, plus a shortcut to the top-performers podium when there's anyone to rank. */
+export function ManagerAnalyticsHeader({ onSeeTopPerformers }: ManagerAnalyticsHeaderProps) {
   return (
-    <View className="flex-row items-end justify-between">
-      <View className="flex-1 pr-3">
-        <Text className="text-caption font-semibold uppercase tracking-[1px] text-fg-faint">
-          Analytics
+    <View className="flex-row items-center justify-between gap-3">
+      <View className="min-w-0 flex-1">
+        <Text className="text-title font-bold text-fg" accessibilityRole="header">
+          Team analytics
         </Text>
-        <Text className="mt-1 text-title font-bold tracking-tight text-fg">
-          Tasks you&apos;ve assigned
-        </Text>
-        <Text className="mt-0.5 text-label text-fg-soft">
-          {hasData
-            ? `${completionRate}% completion · ${pendingTasks} pending`
-            : "What you've handed out to the team"}
-        </Text>
+        <Text className="mt-0.5 text-label text-fg-soft">Tasks you&apos;ve assigned</Text>
       </View>
 
-      {onSeeAll ? (
+      {onSeeTopPerformers ? (
         <Pressable
-          onPress={onSeeAll}
-          hitSlop={8}
+          onPress={onSeeTopPerformers}
+          hitSlop={6}
           accessibilityRole="button"
-          accessibilityLabel="See all analytics"
+          accessibilityLabel="See top performers"
+          className="h-9 flex-row items-center gap-1.5 rounded-full bg-warning-subtle px-3.5 active:opacity-70"
         >
-          <Text className="text-body-sm font-semibold text-brand-strong">
-            See all
-          </Text>
+          <Ionicons name="trophy" size={15} color={colors.warning} />
+          <Text className="text-label font-semibold text-warning-fg">Top performers</Text>
         </Pressable>
       ) : null}
     </View>

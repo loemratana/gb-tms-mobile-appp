@@ -115,15 +115,8 @@ export default function ProfileScreen() {
 
         {/* Performance */}
         <View className="px-4">
-          <Text className="mb-1.5 text-label font-semibold uppercase tracking-wide text-fg-soft" accessibilityRole="header">
-            My performance
-          </Text>
-          <PerformanceOverview userId={profile.currentUser?.id} />
+          <PerformanceOverview title="My performance" userId={profile.currentUser?.id} />
         </View>
-
-        <SettingsGroup>
-          <SettingsRow icon="settings-outline" label="Settings" description="Account, notifications, reminders, about" onPress={openSettings} />
-        </SettingsGroup>
 
         {/* Sign out — kept apart from ordinary settings */}
         <View className="px-4">

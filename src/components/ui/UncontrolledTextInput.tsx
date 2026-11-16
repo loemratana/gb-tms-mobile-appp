@@ -2,6 +2,8 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { forwardRef, useState } from "react";
 import { TextInput, type TextInputInstance, type TextInputProps } from "react-native";
 
+import { APP_FONT_FAMILY } from "@/styles/typography";
+
 export type UncontrolledTextInputProps = Omit<TextInputProps, "value" | "defaultValue"> & {
   /** The form's current value. Typing doesn't echo it back into the native field (see below). */
   value: string;
@@ -26,6 +28,11 @@ export const UncontrolledTextInput = forwardRef<TextInputInstance, UncontrolledT
   ) {
     // The text the native field is showing, as far as we know.
     const [shownValue, setShownValue] = useState(value);
+    // What the field starts with; changes only when it's re-seeded. Passing the live `value` as
+    // `defaultValue` instead would push every keystroke back into the native field (React Native
+    // sends a changed defaultValue to native), which restarts the keyboard's input session on
+    // Android — the keyboard closes while typing — and breaks Khmer composition again.
+    const [seedValue, setSeedValue] = useState(value);
     const [remountKey, setRemountKey] = useState(0);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -34,6 +41,7 @@ export const UncontrolledTextInput = forwardRef<TextInputInstance, UncontrolledT
     // handleChangeText records the typed text first.
     if (value !== shownValue) {
       setShownValue(value);
+      setSeedValue(value);
       setRemountKey((key) => key + 1);
     }
 
@@ -44,7 +52,9 @@ export const UncontrolledTextInput = forwardRef<TextInputInstance, UncontrolledT
 
     const inputProps = {
       ...props,
-      defaultValue: value,
+      // Inputs don't inherit a font, so every field sets the app font itself (a caller's style wins).
+      style: [{ fontFamily: APP_FONT_FAMILY }, props.style],
+      defaultValue: seedValue,
       onChangeText: handleChangeText,
       autoFocus: autoFocus || (remountKey > 0 && isFocused),
       onFocus: (event: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {

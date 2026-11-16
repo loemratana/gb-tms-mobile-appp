@@ -27,6 +27,7 @@ import { getRemoteImageSource, getRemoteImageUrl } from "@/lib/remoteImage";
 import { MAX_ATTACHMENT_BYTES } from "@/services/attachments.service";
 import { useAuthStore } from "@/stores/authStore";
 import { colors } from "@/styles";
+import { toast } from "@/stores/toastStore";
 
 type AttachmentsSectionProps = {
   taskId: string;
@@ -67,7 +68,7 @@ export function AttachmentsSection({
         enableBarCollapsing: true,
       });
     } catch {
-      Alert.alert("Can't open file", `${file.originalName} couldn't be opened on this device.`);
+      toast.error("Can't open file", `${file.originalName} couldn't be opened on this device.`);
     } finally {
       setOpeningId(null);
     }
@@ -77,7 +78,7 @@ export function AttachmentsSection({
     const tooLarge = files.filter((file) => file.size > MAX_ATTACHMENT_BYTES);
     const toUpload = files.filter((file) => file.size <= MAX_ATTACHMENT_BYTES);
     if (tooLarge.length > 0) {
-      Alert.alert(
+      toast.warning(
         "File too large",
         `${tooLarge.map((file) => file.name).join(", ")} ${
           tooLarge.length === 1 ? "is" : "are"
@@ -93,14 +94,13 @@ export function AttachmentsSection({
         onSuccess: ({ uploaded, failed, total, firstError }) => {
           if (failed === 0) return;
           const reason = firstError ? getApiErrorMessage(firstError) : undefined;
-          Alert.alert(
-            uploaded === 0 ? "Upload failed" : "Some files weren't attached",
-            `${failed} of ${total} file${total === 1 ? "" : "s"} couldn't be uploaded.${
-              reason ? `\n\n${reason}` : ""
-            }`
-          );
+          const message = `${failed} of ${total} file${total === 1 ? "" : "s"} couldn't be uploaded.${
+            reason ? ` ${reason}` : ""
+          }`;
+          if (uploaded === 0) toast.error("Upload failed", message);
+          else toast.warning("Some files weren't attached", message);
         },
-        onError: (error) => Alert.alert("Upload failed", getApiErrorMessage(error)),
+        onError: (error) => toast.error("Upload failed", getApiErrorMessage(error)),
       }
     );
   };
@@ -166,8 +166,8 @@ export function AttachmentsSection({
           <Text className="text-caption text-fg-faint">No files attached yet.</Text>
         )
       ) : (
-        <View className="gap-2.5">
-          {attachments.map((file) => {
+        <View>
+          {attachments.map((file, index) => {
             const isOpening = openingId === file.id;
             const isDeleting = deleteMutation.isPending && deleteMutation.variables === file.id;
             const isImage = isImageAttachment(file);
@@ -182,7 +182,7 @@ export function AttachmentsSection({
                 accessibilityRole="button"
                 accessibilityLabel={`Preview ${file.originalName}`}
                 accessibilityHint={deletable ? "Long press to delete" : undefined}
-                className="flex-row items-center rounded-2xl border border-line-soft p-3"
+                className={`flex-row items-center py-3 active:opacity-70 ${index > 0 ? "border-t border-line-soft" : ""}`}
                 style={{ opacity: isDeleting ? 0.5 : 1 }}
               >
                 {isImage ? (

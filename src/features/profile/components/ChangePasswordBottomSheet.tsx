@@ -1,7 +1,7 @@
 import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { Controller } from "react-hook-form";
-import { Alert, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useChangePasswordForm } from "@/features/profile/hooks/useChangePasswordForm";
 import type { ChangePasswordFormValues } from "@/features/profile/schemas/changePassword.schema";
+import { toast } from "@/stores/toastStore";
 
 export type ChangePasswordBottomSheetRef = {
   present: () => void;
@@ -54,7 +55,7 @@ export const ChangePasswordBottomSheet = forwardRef<ChangePasswordBottomSheetRef
     const isSaved = await save();
     if (isSaved) {
       sheetRef.current?.dismiss();
-      Alert.alert("Password changed", "Your password was updated. Any other devices have been signed out.");
+      toast.success("Password changed", "Your password was updated. Any other devices have been signed out.");
     }
   };
 

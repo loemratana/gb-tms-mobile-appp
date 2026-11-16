@@ -2,9 +2,11 @@ import { api, type ApiEnvelope } from "@/lib/api";
 import type { PageResponse } from "@/features/tasks/types/task.types";
 import type {
   AvailableRoomsParams,
+  RoomCalendarResponse,
   RoomImageUpload,
   RoomRequest,
   RoomResponse,
+  RoomScheduleParams,
   RoomSearchParams,
 } from "@/features/meetings/types/meeting.types";
 
@@ -21,6 +23,12 @@ export async function getRoom(id: string): Promise<RoomResponse> {
 /** Active rooms with no confirmed booking overlapping the slot, smallest first. */
 export async function getAvailableRooms(params: AvailableRoomsParams): Promise<RoomResponse[]> {
   const { data } = await api.get<ApiEnvelope<RoomResponse[]>>("/rooms/available", { params });
+  return data.data;
+}
+
+/** Booked and free slots per room per day, for every active room unless `roomId` is set. */
+export async function getRoomSchedule(params: RoomScheduleParams): Promise<RoomCalendarResponse> {
+  const { data } = await api.get<ApiEnvelope<RoomCalendarResponse>>("/rooms/schedule", { params });
   return data.data;
 }
 
